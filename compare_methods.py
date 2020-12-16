@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from pvalue_funcs import pvalue_for_binomial, precalc_pvalue_for_binomial
 from bayes_factor_funcs import bayes_factor_for_binomial
-from my_bound_funcs import my_bound_for_binomial
+from my_bound_funcs import my_bound_for_binomial, memoized_my_bound_for_binomial
 
 if __name__ == "__main__":
     # Parameters for plots
@@ -15,10 +15,10 @@ if __name__ == "__main__":
     P_N = bigfloat.BigFloat(0.5)
 
     start_S = bigfloat.BigFloat(10)
-    end_S = bigfloat.BigFloat(100)
+    end_S = bigfloat.BigFloat(1000)
     S = start_S
 
-    tests_per_S = 100
+    tests_per_S = 1000
 
     pvalue_cutoff = 0.05
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
             bf = bayes_factor_for_binomial(S, null_C, 0.5)
             if bf <= 1.0:
                 bct += 1
-            if my_bound_for_binomial(S, null_C, 0.5) <= 1.0:  #TODO: Update
+            if memoized_my_bound_for_binomial(S, null_C, 0.5) <= 1.0:  #TODO: Update
                 mct += 1
 
             alt_coin_prob = np.random.uniform(0.0, 1.0)
@@ -55,7 +55,7 @@ if __name__ == "__main__":
                 pcf += 1
             if bayes_factor_for_binomial(S, alt_C, 0.5) > 1.0:
                 bcf += 1
-            if my_bound_for_binomial(S, alt_C, 0.5) > 1.0:
+            if memoized_my_bound_for_binomial(S, alt_C, 0.5) > 1.0:
                 mcf += 1
 
         print("------------")

@@ -25,9 +25,6 @@ def my_bound_for_binomial(S, C, coin_prob, P_N=0.5):
     return best_func_val
 
 __memoized_my_bound_values__ = {}
-__memoized_my_bound_S__ = 0.0
-__memoized_my_bound_coin_prob__ = 0.0
-__memoized_my_bound_P_N__ = 0.0
 
 # S -- number of flips
 # C -- number of flips that landed heads
@@ -35,15 +32,19 @@ __memoized_my_bound_P_N__ = 0.0
 def memoized_my_bound_for_binomial(S, C, coin_prob, P_N=0.5):
     assert int(C) == C
     C = int(C)
+    assert int(S) == S
+    S = int(S)
+    assert float(P_N) == P_N
+    P_N = float(P_N)
+    assert float(coin_prob) == coin_prob
+    coin_prob = float(coin_prob)
 
     global __memoized_my_bound_values__
-    global __memoized_my_bound_S__
-    global __memoized_my_bound_coin_prob__
-    global __memoized_my_bound_P_N__
 
-    if __memoized_my_bound_S__ != S or __memoized_my_bound_coin_prob__ != coin_prob or \
-             __memoized_my_bound_P_N__ != P_N:
-        # COMPUTE
-        pass
+    key = (S, C, coin_prob, P_N)
+    if key in __memoized_my_bound_values__:
+        return __memoized_my_bound_values__[key]
 
-    # return
+    value = my_bound_for_binomial(S, C, coin_prob, P_N)
+    __memoized_my_bound_values__[key] = value
+    return value
