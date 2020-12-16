@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-from pvalue_funcs import pvalue_for_binomial
+from pvalue_funcs import pvalue_for_binomial, precalc_pvalue_for_binomial
 from bayes_factor_funcs import bayes_factor_for_binomial
 from my_bound_funcs import my_bound_for_binomial
 
@@ -15,10 +15,10 @@ if __name__ == "__main__":
     P_N = bigfloat.BigFloat(0.5)
 
     start_S = bigfloat.BigFloat(10)
-    end_S = bigfloat.BigFloat(10000)
+    end_S = bigfloat.BigFloat(100)
     S = start_S
 
-    tests_per_S = 1000
+    tests_per_S = 100
 
     pvalue_cutoff = 0.05
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
         mcf = 0
         for _ in range(0, tests_per_S):
             null_C = bigfloat.BigFloat(np.random.binomial(S, 0.5))
-            if pvalue_for_binomial(S, null_C, 0.5) >= pvalue_cutoff:
+            if precalc_pvalue_for_binomial(S, null_C, 0.5) >= pvalue_cutoff:
                 pct += 1
             bf = bayes_factor_for_binomial(S, null_C, 0.5)
             if bf <= 1.0:
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
             alt_coin_prob = np.random.uniform(0.0, 1.0)
             alt_C = bigfloat.BigFloat(np.random.binomial(S, alt_coin_prob))
-            if pvalue_for_binomial(S, alt_C, 0.5) < pvalue_cutoff:
+            if precalc_pvalue_for_binomial(S, alt_C, 0.5) < pvalue_cutoff:
                 pcf += 1
             if bayes_factor_for_binomial(S, alt_C, 0.5) > 1.0:
                 bcf += 1
