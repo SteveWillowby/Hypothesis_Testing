@@ -13,7 +13,7 @@ def __best_m_and_evidence_strength_helper__(P_X_given_N, P_N, n, m):
 # S -- number of flips
 # C -- number of flips that landed heads
 # p_null -- the proportion of flips that the null hypothesis expects to be heads
-def my_bound_for_binomial(S, C, coin_prob, P_N=0.5):
+def my_universal_bound_on_binomial(S, C, coin_prob, P_N=0.5):
     n = S + 1
     P_X_given_N = bigfloat_prob_of_count_given_p(C, coin_prob, S)
     # if P_X_given_N >= 1.0 / n:
@@ -24,12 +24,12 @@ def my_bound_for_binomial(S, C, coin_prob, P_N=0.5):
 
     return best_func_val
 
-__memoized_my_bound_values__ = {}
+__memoized_my_universal_bound_values__ = {}
 
 # S -- number of flips
 # C -- number of flips that landed heads
 # p_null -- the proportion of flips that the null hypothesis expects to be heads
-def memoized_my_bound_for_binomial(S, C, coin_prob, P_N=0.5):
+def memoized_my_universal_bound_on_binomial(S, C, coin_prob, P_N=0.5):
     assert int(C) == C
     C = int(C)
     assert int(S) == S
@@ -39,12 +39,15 @@ def memoized_my_bound_for_binomial(S, C, coin_prob, P_N=0.5):
     assert float(coin_prob) == coin_prob
     coin_prob = float(coin_prob)
 
-    global __memoized_my_bound_values__
+    global __memoized_my_universal_bound_values__
 
     key = (S, C, coin_prob, P_N)
-    if key in __memoized_my_bound_values__:
-        return __memoized_my_bound_values__[key]
+    if key in __memoized_my_universal_bound_values__:
+        return __memoized_my_universal_bound_values__[key]
 
-    value = my_bound_for_binomial(S, C, coin_prob, P_N)
-    __memoized_my_bound_values__[key] = value
+    value = my_universal_bound_on_binomial(S, C, coin_prob, P_N)
+    __memoized_my_universal_bound_values__[key] = value
     return value
+
+def my_binomial_bound_on_binomial(S, C, coin_prob, P_N=0.5):
+    pass
