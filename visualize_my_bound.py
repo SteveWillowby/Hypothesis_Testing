@@ -76,4 +76,4 @@ if __name__ == "__main__":
 
     visualize_my_universal_bound_on_binomial(600, \
         coin_prob=(1.0 / bigfloat.BigFloat(6.0)), \
-        marked_points=[(113, 0.5)], num_priors=101)
+        marked_points=[(133, 0.5)], num_priors=101)
