@@ -10,7 +10,7 @@ def __best_m__(P_X_given_N, P_N, n):
     best_m_denominator = P_X_given_N + 1.0 / (P_N * (n - 1))
     return bigfloat.max(n, best_m_numerator / best_m_denominator)
 
-def __universal_bound__(P_X_given_N, P_N, n):
+def my_universal_bound(P_X_given_N, P_N, n):
     assert P_N != 1.0
     assert P_N != 0.0
     P_not_N = 1.0 - P_N
@@ -29,7 +29,7 @@ def my_universal_bound_on_binomial(S, C, p_null, P_N=0.5):
     n = S + 1
     P_X_given_N = bigfloat_prob_of_count_given_p(C, p_null, S)
 
-    return __universal_bound__(P_X_given_N, P_N, n)
+    return my_universal_bound(P_X_given_N, P_N, n)
 
 __memoized_my_universal_bound_values__ = {}
 
