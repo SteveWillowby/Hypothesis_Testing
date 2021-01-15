@@ -69,7 +69,7 @@ def visualize_my_universal_bound_on_plain_probs(n, num_probs=101, num_priors=101
 # num_priors -- the number of distinct prior values P(N) for which to compute the surface
 # marked_points -- a list of (P_X_given_N, P_N) points to highlight on the 3d contour
 def visualize_my_universal_bound_on_plain_probs_evidence_only(n, num_probs=101, num_priors=101, marked_points=[]):
-    end_P_N = bigfloat.pow(2.0, -100)
+    end_P_N = bigfloat.exp(-100)
     start_P_N = 1.0 - end_P_N
 
     end_P_N = bigfloat.log(end_P_N)
@@ -111,5 +111,5 @@ if __name__ == "__main__":
         marked_points=[(13, 0.5)], num_priors=11)
 
     """
-    visualize_my_universal_bound_on_plain_probs_evidence_only(10, \
+    visualize_my_universal_bound_on_plain_probs_evidence_only(100000, \
         num_probs=101, num_priors=101, marked_points=[])
