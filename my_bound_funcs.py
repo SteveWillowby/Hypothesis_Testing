@@ -21,6 +21,17 @@ def my_universal_bound(P_X_given_N, P_N, n):
     p_star = chance_correct * if_correct + (1.0 - chance_correct) * P_N
     return ((1.0 - p_star) * P_N) / (p_star * P_not_N)
 
+def my_universal_other_bound(P_X_given_N, P_N, n):
+    assert P_N != 1.0
+    assert P_N != 0.0
+    P_not_N = 1.0 - P_N
+    best_m = __best_m__(P_X_given_N, P_N, n)
+
+    chance_correct = (P_not_N * (1.0 - (n - 1) / best_m))
+    if_correct = (P_X_given_N * P_N) / (P_X_given_N * P_N + (1.0 / best_m) * P_not_N)
+    p_star = chance_correct * if_correct + (1.0 - chance_correct) * P_N
+    return (P_N / p_star) # * ((1.0 - p_star) / P_not_N)
+
 # S -- number of flips
 # C -- number of flips that landed heads
 # p_null -- the proportion of flips that the null hypothesis expects to be heads

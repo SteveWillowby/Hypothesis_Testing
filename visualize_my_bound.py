@@ -1,6 +1,6 @@
 import bigfloat
 from plotting_funcs import plot_3d_surface
-from my_bound_funcs import my_universal_bound_on_binomial, my_universal_bound
+from my_bound_funcs import my_universal_bound_on_binomial, my_universal_bound, my_universal_other_bound
 
 
 # num_flips -- the total number of flips of the coin (not the number of heads)
@@ -39,7 +39,7 @@ def visualize_my_universal_bound_on_binomial(num_flips, coin_prob=0.5, \
 # num_priors -- the number of distinct prior values P(N) for which to compute the surface
 # marked_points -- a list of (P_X_given_N, P_N) points to highlight on the 3d contour
 def visualize_my_universal_bound_on_plain_probs(n, num_probs=101, num_priors=101, marked_points=[]):
-    end_P_N = bigfloat.pow(2.0, -20)
+    end_P_N = 0.1 # bigfloat.pow(2.0, -20)
     start_P_N = 1.0 - end_P_N
     P_N_increment = (end_P_N - start_P_N) / (num_priors - 1)
     P_N_vals = [start_P_N + (i * P_N_increment) for i in range(0, num_priors)]
@@ -51,7 +51,8 @@ def visualize_my_universal_bound_on_plain_probs(n, num_probs=101, num_priors=101
         i in range(0, num_probs)]
 
     z_axis_function = (lambda x: lambda y: \
-        float(bigfloat.log2(my_universal_bound(y[0], y[1], x))))(n)
+        float(bigfloat.log2(my_universal_other_bound(y[0], y[1], x))))(n) # - \
+              # bigfloat.log2(my_universal_other_bound(y[0], y[1], x))))(n)
 
     surface_alpha=0.5
     if len(marked_points) == 0:
@@ -69,7 +70,7 @@ def visualize_my_universal_bound_on_plain_probs(n, num_probs=101, num_priors=101
 # num_priors -- the number of distinct prior values P(N) for which to compute the surface
 # marked_points -- a list of (P_X_given_N, P_N) points to highlight on the 3d contour
 def visualize_my_universal_bound_on_plain_probs_evidence_only(n, num_probs=101, num_priors=101, marked_points=[]):
-    end_P_N = bigfloat.exp(-100)
+    end_P_N = bigfloat.exp(-20)
     start_P_N = 1.0 - end_P_N
 
     end_P_N = bigfloat.log(end_P_N)
@@ -79,16 +80,20 @@ def visualize_my_universal_bound_on_plain_probs_evidence_only(n, num_probs=101, 
     P_N_vals = [start_P_N + (i * P_N_increment) for i in range(0, num_priors)]
     
     start_P_X_given_N = 1.0 / bigfloat.BigFloat(n)
-    end_P_X_given_N = end_P_N
+    end_P_X_given_N = bigfloat.exp(-100)
 
     start_P_X_given_N = bigfloat.log(start_P_X_given_N)
+    end_P_X_given_N = bigfloat.log(end_P_X_given_N)
 
     P_X_given_N_increment = (end_P_X_given_N - start_P_X_given_N) / (num_probs - 1)
     P_X_given_N_vals = [start_P_X_given_N + (i * P_X_given_N_increment) for \
         i in range(0, num_probs)]
 
     z_axis_function = (lambda x: lambda y: \
-        float(bigfloat.log2(my_universal_bound(bigfloat.exp(y[0]), bigfloat.exp(y[1]), x))))(n)
+        float(bigfloat.log2(\
+            my_universal_other_bound(bigfloat.exp(y[0]), bigfloat.exp(y[1]), x)) - \
+              bigfloat.log2(\
+            my_universal_bound(bigfloat.exp(y[0]), bigfloat.exp(y[1]), x))))(n)
 
     surface_alpha=0.5
     if len(marked_points) == 0:
@@ -111,5 +116,5 @@ if __name__ == "__main__":
         marked_points=[(13, 0.5)], num_priors=11)
 
     """
-    visualize_my_universal_bound_on_plain_probs_evidence_only(100000, \
-        num_probs=101, num_priors=101, marked_points=[])
+    visualize_my_universal_bound_on_plain_probs(2, \
+        num_probs=201, num_priors=201, marked_points=[])
