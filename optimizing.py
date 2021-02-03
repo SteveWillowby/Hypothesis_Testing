@@ -182,7 +182,7 @@ def search_semi_convex_range(min_arg, max_arg, func, find="min", \
         iterations=20, values_per_iteration=100, spread=3.0, \
         diagnose=False):
     assert iterations >= 1
-    assert values_per_iteration >= 3
+    assert values_per_iteration >= 5
     assert find == "min" or find == "max"
     assert spread > 1.0
 
@@ -292,7 +292,7 @@ def search_semi_convex_range(min_arg, max_arg, func, find="min", \
 
         min_arg = new_min
         max_arg = new_max
-        if diagnose:
+        if diagnose and iteration + 1 < iterations:
             print("Iteration %d will use range: (%s, %s)" % (iteration + 2, min_arg, max_arg))
 
     if diagnose:

@@ -94,7 +94,7 @@ def __alternate_bigfloat_binomial_prob__(C, p, S):
 # p -- coin prob
 # S -- total number of flips
 def __precompute_cumulative_probs_for_binomial__(p, S):
-    print("Precomputing cumulative binomial probs for (%s, %d))" % (p, S))
+    # print("Precomputing cumulative binomial probs for (%s, %d))" % (p, S))
     probs = []
     for C in range(0, int(S) + 1):
         probs.append(__alternate_bigfloat_binomial_prob__(C, p, S))
@@ -143,9 +143,18 @@ def __precompute_cumulative_probs_for_binomial__(p, S):
 # S -- total number of flips
 def __get_prob_that_specific_binomial_prob_over_threshold__(p, t, S):
     if (int(S), p) not in __precomputed_cumulative_probs__:
-        __precompute_cumulative_probs_for_binomial__(p, S)
 
-    cum_probs = __precomputed_cumulative_probs__[(int(S), p)]
+        __precompute_cumulative_probs_for_binomial__(p, S)
+        cum_probs = __precomputed_cumulative_probs__[(int(S), p)]
+
+        # Only keep the first several computed probs. They are most likely to
+        #   be reused.
+        if len(__precomputed_cumulative_probs__) > int(S) * 2:
+            del __precomputed_cumulative_probs__[(int(S), p)] 
+
+    else:
+        # print("MIRACLE!!!")
+        cum_probs = __precomputed_cumulative_probs__[(int(S), p)]
 
     # Find the largest prob <= t
     criterion = (lambda x: (lambda y: y[0] <= x))(t)
@@ -179,12 +188,13 @@ def __get_worst_meta_binomial_bound_for_inner_threshold__(t, S): #, \
             hard_min=bigfloat.BigFloat(0.0), \
             hard_max=bigfloat.BigFloat(0.5), \
             hard_min_inclusive=False, hard_max_inclusive=True, \
-            iterations=10, values_per_iteration=10, spread=3.0, \
-            diagnose=True)
+            iterations=5, values_per_iteration=100, spread=2.0, \
+            diagnose=False)
 
     __memoized_worst_meta_probs_for_thresholds__[key] = worst_value
     return worst_value
 
+    """
     if probs_to_check is None:
         probs_to_check = 3 * int(S)
 
@@ -208,17 +218,53 @@ def __get_worst_meta_binomial_bound_for_inner_threshold__(t, S): #, \
 
     __memoized_worst_meta_probs_for_thresholds__[key] = worst_value
     return worst_value
+    """
 
 __memoized_master_values__ = {}
 
-def best_binomial_bound_for_binomial(C, p, P_N, S, num_thresholds=20000):
+def __best_binomial_bound_for_binomial_helper__(thresh, P_X_given_N, S, P_N):
+    P_not_N = 1.0 - P_N
+    PN_Combo = P_X_given_N * P_N
+    outer_bound_for_thresh = \
+        __get_worst_meta_binomial_bound_for_inner_threshold__(thresh, S)
 
-    key = (C, p, P_N, S, num_thresholds)
+    possible_p_star = outer_bound_for_thresh * \
+                          (PN_Combo / (PN_Combo + thresh * P_not_N)) + \
+                      (1.0 - outer_bound_for_thresh) * P_N
+    value = (1.0 - possible_p_star) * P_not_N / (possible_p_star * P_N)
+    return value
+
+def best_binomial_bound_for_binomial(C, p, P_N, S):
+
+    key = (C, p, P_N, S)
     if key in __memoized_master_values__:
         return __memoized_master_values__[key]
 
     P_X_given_N = bigfloat_prob_of_count_given_p(C, p, S)
 
+    func_to_maximize = (lambda x: (lambda y: \
+        __best_binomial_bound_for_binomial_helper__(y, x[0], x[1], x[2])))(\
+            (P_X_given_N, S, P_N))
+
+    # Max thresh is the peak of the 50-50 binomial. Beyond that there can be no
+    #   guarantees, so it's not worth checking.
+    max_thresh = \
+        bigfloat_prob_of_count_given_p(int(S / 2), bigfloat.BigFloat(0.5), S)
+
+    (best_threshold, best_value) = search_semi_convex_range(\
+            min_arg=bigfloat.BigFloat(0.0), \
+            max_arg=max_thresh, \
+            func=func_to_maximize, find="max", \
+            hard_min=bigfloat.BigFloat(0.0), \
+            hard_max=max_thresh, \
+            hard_min_inclusive=False, hard_max_inclusive=False, \
+            iterations=10, values_per_iteration=10, spread=2.0, \
+            diagnose=True)
+
+    __memoized_master_values__[key] = (best_theshold, best_value)
+    return (best_threshold, best_value)
+
+    """
     min_thresh = bigfloat.exp2(-1000)
     # Max thresh is the peak of the 50-50 binomial. Beyond that there can be no
     #   guarantees, so it's not worth checking.
@@ -250,7 +296,7 @@ def best_binomial_bound_for_binomial(C, p, P_N, S, num_thresholds=20000):
 
     __memoized_master_values__[key] = best_value
     return best_value
-
+    """
 
 """
 # b -- a threshold
@@ -296,7 +342,9 @@ def my_binomial_bound_on_binomial(S, C, coin_prob, P_N=0.5):
 
 
 if __name__ == "__main__":
-    best_binomial_bound_for_binomial(C=133, p=bigfloat.BigFloat(0.5), P_N=bigfloat.BigFloat(0.5), S=600, num_thresholds=20000)
+    (threshold, evidence_bound) = best_binomial_bound_for_binomial(C=133, p=bigfloat.BigFloat(0.5), P_N=bigfloat.BigFloat(0.5), S=600)
+    print("And the evidence bound is... %s" % evidence_bound)
+    print("   (...with respective threshold of: %s)" % threshold)
     exit(0)
 
 
