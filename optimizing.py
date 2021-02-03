@@ -1,4 +1,5 @@
 import bigfloat
+import matplotlib.pyplot as plt
 
 # Assumes function is convex
 def binary_min_finder(func, low, high, tol=bigfloat.BigFloat(2.0**(-30)), error_depth=1):
@@ -158,3 +159,155 @@ def max_finder_low_bound_only(func, low_arg, tol=bigfloat.BigFloat(2.0**(-30))):
     func_prime = (lambda x: -1.0 * func(x))
     (best_arg, best_func) = min_finder_low_bound_only(func_prime, low_arg, tol=tol)
     return (best_arg, -1.0 * best_func)
+
+# Designed to search a function which is convex on a macro scale but not at a
+#   micro scale.
+#
+# Repeatedly find the best and second-best arg/func pairs out of
+#   `values_per_iteration` samples. Then re-search centered on the space halfway
+#   between the best and second-best args. The width of the space is the gap
+#   between the best and second-best args multiplied by `spread`. Do this for a
+#   total of `iterations` iterations.
+#
+# Technically this allows the result to be outside the range of min_arg and
+#   max_arg, so we allow `hard_min` and `hard_max`. All values tested will be
+#   larger than `hard_min` and less than `hard_max`. If `hard_min_inclusive` is
+#   set, the values can get as small as `hard_min`. Likewise for
+#   `hard_max_inclusive`.
+#
+# `diagnose` produces a plot of all the points tested
+def search_semi_convex_range(min_arg, max_arg, func, find="min", \
+        hard_min=None, hard_max=None, \
+        hard_min_inclusive=False, hard_max_inclusive=False, \
+        iterations=20, values_per_iteration=100, spread=3.0, \
+        diagnose=False):
+    assert iterations >= 1
+    assert values_per_iteration >= 3
+    assert find == "min" or find == "max"
+    assert spread > 1.0
+
+    assert hard_min is None or hard_min <= min_arg
+    assert hard_max is None or hard_max >= max_arg
+
+    prev_best_arg = None
+    prev_second_best_arg = None
+
+    very_best_arg = None
+    very_best_func_value = None
+
+    if diagnose:
+        diagnostic_points = {}
+        orig_min_arg = min_arg
+        orig_max_arg = max_arg
+
+    for iteration in range(0, iterations):
+        start_arg = min_arg
+        arg_increment = (max_arg - min_arg) / (values_per_iteration - 1)
+
+        best_arg = None
+        best_func_value = None
+        second_best_arg = None
+        second_best_func_value = None
+        for i in range(0, values_per_iteration):
+            curr_arg = start_arg + i * arg_increment
+
+            # Protect from invalid arguments to `func`
+            if (not hard_min_inclusive) and not (hard_min is None):
+                if curr_arg <= hard_min:
+                    continue
+            if (not hard_max_inclusive) and not (hard_max is None):
+                if curr_arg >= hard_max:
+                    continue
+
+            curr_func_value = func(curr_arg)
+
+            if diagnose:
+                diagnostic_points[curr_arg] = curr_func_value
+
+            if best_arg is None:
+                best_arg = curr_arg
+                best_func_value = curr_func_value
+            else:
+                if find == "min":
+                    if curr_func_value < best_func_value:
+                        second_best_func_value = best_func_value
+                        second_best_arg = best_arg
+                        best_func_value = curr_func_value
+                        best_arg = curr_arg
+                    elif second_best_arg is None or \
+                            curr_func_value < second_best_func_value:
+                        second_best_func_value = curr_func_value
+                        second_best_arg = curr_arg
+                else:
+                    if curr_func_value > best_func_value:
+                        second_best_func_value = best_func_value
+                        second_best_arg = best_arg
+                        best_func_value = curr_func_value
+                        best_arg = curr_arg
+                    elif second_best_arg is None or \
+                            curr_func_value > second_best_func_value:
+                        second_best_func_value = curr_func_value
+                        second_best_arg = curr_arg
+
+        if prev_best_arg is None:
+            prev_best_arg = best_arg
+            prev_second_best_arg = second_best_arg
+
+            very_best_arg = best_arg
+            very_best_func_value = best_func_value
+        else:
+            if find == "min":
+                if very_best_func_value > best_func_value:
+                    very_best_func_value = best_func_value
+                    very_best_arg = best_arg
+            else:
+                if very_best_func_value < best_func_value:
+                    very_best_func_value = best_func_value
+                    very_best_arg = best_arg
+
+            if prev_best_arg == best_arg and prev_second_best_arg == second_best_arg:
+                print("Ending a search %d iterations early because nothing is changing." % \
+                    (iterations - (iteration + 1)))
+                break
+
+            prev_best_arg = best_arg
+            prev_second_best_arg = second_best_arg
+
+        if best_arg > second_best_arg:
+            higher_arg = best_arg
+            lower_arg = second_best_arg
+        else:
+            higher_arg = second_best_arg
+            lower_arg = best_arg
+
+        new_center = lower_arg + (higher_arg - lower_arg) / 2.0
+        half_new_width = ((higher_arg - lower_arg) / 2.0) * spread
+
+        new_min = new_center - half_new_width
+        if not hard_min is None and new_min < hard_min:
+            new_min = hard_min
+        new_max = new_center + half_new_width
+        if not hard_max is None and new_max > hard_max:
+            new_max = hard_max
+
+        min_arg = new_min
+        max_arg = new_max
+        if diagnose:
+            print("Iteration %d will use range: (%s, %s)" % (iteration + 2, min_arg, max_arg))
+
+    if diagnose:
+        diagnostic_points = \
+            [(arg, value) for (arg, value) in diagnostic_points.items()]
+        diagnostic_points.sort()
+        x = [a for (a, b) in diagnostic_points]
+        y = [b for (a, b) in diagnostic_points]
+        plt.plot(x, y)
+        plt.suptitle("%simizing `func` on the range (%f, %f)" % \
+            (find, orig_min_arg, orig_max_arg))
+        plt.title("Iterations: %d, Points per Iteration: %d, Spread: %f" % \
+            (iterations, values_per_iteration, spread))
+        plt.xlabel("Unknown X Axis")
+        plt.ylabel("`func` Values")
+        plt.show()
+
+    return (very_best_arg, very_best_func_value)

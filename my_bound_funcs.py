@@ -94,7 +94,7 @@ def __alternate_bigfloat_binomial_prob__(C, p, S):
 # p -- coin prob
 # S -- total number of flips
 def __precompute_cumulative_probs_for_binomial__(p, S):
-    print("Precomputing cumulative binomial probs for (%f, %d))" % (p, S))
+    print("Precomputing cumulative binomial probs for (%s, %d))" % (p, S))
     probs = []
     for C in range(0, int(S) + 1):
         probs.append(__alternate_bigfloat_binomial_prob__(C, p, S))
@@ -102,15 +102,26 @@ def __precompute_cumulative_probs_for_binomial__(p, S):
     idx_A = len(probs) - 1
     inc_A = -1
     idx_B = 0
-    inc_B = 0
+    inc_B = 1
     cumulative_prob = bigfloat.BigFloat(1.0)
     # Stores pairs (p1, p2) where p2 is meta-prob that prob is >= p1
     threshold_pairs = [(bigfloat.BigFloat(0.0), cumulative_prob)]
-    while float(cumulative_prob) > 0:
+
+    # s = bigfloat.BigFloat(0.0)
+    # for prob in probs:
+    #     s += prob
+    # print("\nGrand sum: %s\n" % s)
+
+    # print("(%d, %d): %s" % (idx_B, idx_A, cumulative_prob))
+
+    while idx_A >= idx_B:
         p_A = probs[idx_A]
         p_B = probs[idx_B]
         if p_A == p_B:
-            cumulative_prob -= 2.0 * p_A
+            if idx_A == idx_B:
+                cumulative_prob -= p_A
+            else:
+                cumulative_prob -= 2.0 * p_A
             threshold_pairs.append((p_A, cumulative_prob))
             idx_A += inc_A
             idx_B += inc_B
@@ -123,6 +134,7 @@ def __precompute_cumulative_probs_for_binomial__(p, S):
             cumulative_prob -= p_B
             threshold_pairs.append((p_B, cumulative_prob))
             idx_B += inc_B
+        # print("(%d, %d): %s" % (idx_B, idx_A, cumulative_prob))
 
     __precomputed_cumulative_probs__[(int(S), p)] = threshold_pairs
 
@@ -148,13 +160,34 @@ __memoized_worst_meta_probs_for_thresholds__ = {}
 
 # t -- threshold_value
 # S -- total number of flips
-def __get_worst_meta_binomial_bound_for_inner_threshold__(t, S, \
-        probs_to_check=20000, \
-        p_min=bigfloat.exp2(-1000), p_max=bigfloat.BigFloat(0.5)):
+def __get_worst_meta_binomial_bound_for_inner_threshold__(t, S): #, \
+        # probs_to_check=None, \
+        # p_min=bigfloat.exp2(-1000), p_max=bigfloat.BigFloat(0.5)):
 
-    key = (p_min, p_max, probs_to_check, t, S)
+    key = (t, S)
     if key in __memoized_worst_meta_probs_for_thresholds__:
         return __memoized_worst_meta_probs_for_thresholds__[key]
+
+    func_to_minimize = (lambda x: (lambda y: \
+        __get_prob_that_specific_binomial_prob_over_threshold__(\
+            y, x[0], x[1])))((t, S))
+
+    (_, worst_value) = search_semi_convex_range(\
+            min_arg=bigfloat.BigFloat(0.0), \
+            max_arg=bigfloat.BigFloat(0.5), \
+            func=func_to_minimize, find="min", \
+            hard_min=bigfloat.BigFloat(0.0), \
+            hard_max=bigfloat.BigFloat(0.5), \
+            hard_min_inclusive=False, hard_max_inclusive=True, \
+            iterations=10, values_per_iteration=10, spread=3.0, \
+            diagnose=True)
+
+    __memoized_worst_meta_probs_for_thresholds__[key] = worst_value
+    return worst_value
+
+    if probs_to_check is None:
+        probs_to_check = 3 * int(S)
+
 
     log_p_min=bigfloat.log2(p_min)
     log_p_max=bigfloat.log2(p_max)
