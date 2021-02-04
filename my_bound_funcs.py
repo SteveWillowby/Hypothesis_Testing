@@ -189,6 +189,7 @@ def __get_worst_meta_binomial_bound_for_inner_threshold__(t, S): #, \
             hard_max=bigfloat.BigFloat(0.5), \
             hard_min_inclusive=False, hard_max_inclusive=True, \
             iterations=5, values_per_iteration=100, spread=2.0, \
+            max_shrink=100.0, \
             diagnose=False)
 
     __memoized_worst_meta_probs_for_thresholds__[key] = worst_value
@@ -261,6 +262,7 @@ def best_binomial_bound_for_binomial(C, p, P_N, S):
             hard_max=max_thresh, \
             hard_min_inclusive=False, hard_max_inclusive=False, \
             iterations=10, values_per_iteration=10, spread=2.0, \
+            max_shrink=100.0, \
             diagnose=True)
 
     __memoized_master_values__[key] = (best_threshold, best_value)
@@ -344,7 +346,7 @@ def my_binomial_bound_on_binomial(S, C, coin_prob, P_N=0.5):
 
 
 if __name__ == "__main__":
-    (threshold, evidence_bound) = best_binomial_bound_for_binomial(C=133, p=bigfloat.BigFloat(0.5), P_N=bigfloat.BigFloat(0.5), S=600)
+    (threshold, evidence_bound) = best_binomial_bound_for_binomial(C=133, p=(bigfloat.BigFloat(1.0) / 6.0), P_N=bigfloat.BigFloat(0.5), S=600)
     print("And the evidence bound is... %s" % evidence_bound)
     print("   (...with respective threshold of: %s)" % threshold)
     exit(0)

@@ -175,11 +175,15 @@ def max_finder_low_bound_only(func, low_arg, tol=bigfloat.BigFloat(2.0**(-30))):
 #   set, the values can get as small as `hard_min`. Likewise for
 #   `hard_max_inclusive`.
 #
-# `diagnose` produces a plot of all the points tested
+# `diagnose` produces a plot of all the points tested.
+#
+# `max_shrink` provides a maximum factor by which the search space may shrink
+#   each iteration (this argument can make things larger than `spread` would
+#   normally make things)
 def search_semi_convex_range(min_arg, max_arg, func, find="min", \
         hard_min=None, hard_max=None, \
         hard_min_inclusive=False, hard_max_inclusive=False, \
-        iterations=20, values_per_iteration=100, spread=3.0, \
+        iterations=10, values_per_iteration=100, spread=3.0, max_shrink=100.0, \
         diagnose=False):
     assert iterations >= 1
     assert values_per_iteration >= 5
@@ -281,7 +285,13 @@ def search_semi_convex_range(min_arg, max_arg, func, find="min", \
             lower_arg = best_arg
 
         new_center = lower_arg + (higher_arg - lower_arg) / 2.0
-        half_new_width = ((higher_arg - lower_arg) / 2.0) * spread
+
+        half_new_width_A = ((higher_arg - lower_arg) / 2.0) * spread
+        half_new_width_B = ((max_arg - min_arg) / 2.0) / max_shrink
+        half_new_width = bigfloat.max(half_new_width_A, half_new_width_B)
+        if diagnose and half_new_width == half_new_width_B:
+            print("  Max shrink was used. %s vs %s" % \
+                (half_new_width_A, half_new_width_B))
 
         new_min = new_center - half_new_width
         if not hard_min is None and new_min < hard_min:
