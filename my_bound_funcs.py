@@ -228,9 +228,11 @@ def __best_binomial_bound_for_binomial_helper__(thresh, P_X_given_N, S, P_N):
     outer_bound_for_thresh = \
         __get_worst_meta_binomial_bound_for_inner_threshold__(thresh, S)
 
-    possible_p_star = outer_bound_for_thresh * \
+    chance_correct = outer_bound_for_thresh * P_not_N
+
+    possible_p_star = chance_correct * \
                           (PN_Combo / (PN_Combo + thresh * P_not_N)) + \
-                      (1.0 - outer_bound_for_thresh) * P_N
+                      (1.0 - chance_correct) * P_N
     value = (1.0 - possible_p_star) * P_not_N / (possible_p_star * P_N)
     return value
 

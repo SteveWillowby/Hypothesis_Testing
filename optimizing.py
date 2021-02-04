@@ -285,10 +285,17 @@ def search_semi_convex_range(min_arg, max_arg, func, find="min", \
 
         new_min = new_center - half_new_width
         if not hard_min is None and new_min < hard_min:
-            new_min = hard_min
+            if hard_min_inclusive:
+                new_min = hard_min
+            else:
+                # Move VERY close to new_min. Can get closer each time.
+                new_min = (1000.0 * hard_min + lower_arg) / 1001.0
         new_max = new_center + half_new_width
         if not hard_max is None and new_max > hard_max:
-            new_max = hard_max
+            if hard_max_inclusive:
+                new_max = hard_max
+            else:
+                new_max = (1000.0 * hard_max + higher_arg) / 1001.0
 
         min_arg = new_min
         max_arg = new_max
