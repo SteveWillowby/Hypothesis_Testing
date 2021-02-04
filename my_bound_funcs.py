@@ -261,7 +261,7 @@ def best_binomial_bound_for_binomial(C, p, P_N, S):
             iterations=10, values_per_iteration=10, spread=2.0, \
             diagnose=True)
 
-    __memoized_master_values__[key] = (best_theshold, best_value)
+    __memoized_master_values__[key] = (best_threshold, best_value)
     return (best_threshold, best_value)
 
     """
