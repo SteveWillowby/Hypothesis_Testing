@@ -160,10 +160,12 @@ def visualize_my_binomial_bound_on_binomial(num_flips, coin_prob=0.5, \
             P_N = P_N_vals[P_N_idx]
             print("Computing for C = %d, P_N = %f" % (C, P_N))
 
-            func_value = float(bigfloat.log2(\
-                best_binomial_bound_for_binomial(C, coin_prob, P_N, num_flips)))
+            (thresh, evidence_bound) = \
+                best_binomial_bound_for_binomial(C, coin_prob, P_N, num_flips)
+            thresh = float(thresh)
+            evidence_bound = float(bigfloat.log2(evidence_bound))
 
-            bound_values[-1].append(func_value)
+            bound_values[-1].append((thresh, evidence_bound))
 
             P_N_idx += 1
 
@@ -184,7 +186,7 @@ def visualize_my_binomial_bound_on_binomial(num_flips, coin_prob=0.5, \
 
     __bb_kill_status__ = "Regular"
 
-    z_axis_function = (lambda x: (lambda y: x[y[0]][y[1]]))(bound_values)
+    z_axis_function = (lambda x: (lambda y: x[y[0]][y[1]][1]))(bound_values)
 
     surface_alpha = 0.5
     if len(marked_points) == 0:
