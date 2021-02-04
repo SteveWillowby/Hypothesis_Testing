@@ -188,7 +188,7 @@ def __get_worst_meta_binomial_bound_for_inner_threshold__(t, S): #, \
             hard_min=bigfloat.BigFloat(0.0), \
             hard_max=bigfloat.BigFloat(0.5), \
             hard_min_inclusive=False, hard_max_inclusive=True, \
-            iterations=5, values_per_iteration=100, spread=2.0, \
+            iterations=5, values_per_iteration=50, spread=2.0, \
             max_shrink=100.0, \
             diagnose=False)
 
@@ -261,7 +261,7 @@ def best_binomial_bound_for_binomial(C, p, P_N, S):
             hard_min=bigfloat.BigFloat(0.0), \
             hard_max=max_thresh, \
             hard_min_inclusive=False, hard_max_inclusive=False, \
-            iterations=10, values_per_iteration=10, spread=2.0, \
+            iterations=6, values_per_iteration=12, spread=2.0, \
             max_shrink=100.0, \
             diagnose=True)
 
