@@ -263,7 +263,7 @@ def best_binomial_bound_for_binomial(C, p, P_N, S):
             hard_min_inclusive=False, hard_max_inclusive=False, \
             iterations=6, values_per_iteration=12, spread=2.0, \
             max_shrink=100.0, \
-            diagnose=True)
+            diagnose=False)
 
     __memoized_master_values__[key] = (best_threshold, best_value)
     return (best_threshold, best_value)
@@ -301,49 +301,6 @@ def best_binomial_bound_for_binomial(C, p, P_N, S):
     __memoized_master_values__[key] = best_value
     return best_value
     """
-
-"""
-# b -- a threshold
-# p -- the probability of the coin
-# S -- the total number of coin flips
-#
-# Returns the confidence that p_given_p >= b
-def __my_binomial_bound_on_binomial_helper_helper__(b, p, S):
-    total = bigfloat.BigFloat(0.0)
-    for C in range(0, int(S * p) + 1):
-        p_given_p = bigfloat_prob_of_count_given_p(C, p, S)
-        if p_given_p >= b:
-            break
-        total += p_given_p
-    for i in range(0, int(S) - int(S*p)):
-        C = int(S) - i
-        p_given_p = bigfloat_prob_of_count_given_p(C, p, S)
-        if p_given_p >= b:
-            break
-        total += p_given_p
-    return 1.0 - total
-
-def __my_binomial_bound_on_binomial_helper__(P_X_given_N, b, S, P_N):
-    func = (lambda x: lambda y: __my_binomial_bound_on_binomial_helper_helper__(x[0], y, x[1]))((b, S))
-    (best_p, lowest_outer_confidence) = binary_min_finder(func, 0.0, 1.0)
-    print("Best p: %f" % best_p)
-
-    P_not_N = 1.0 - P_N
-    chance_correct = lowest_outer_confidence
-    if_correct = (P_X_given_N * P_N) / (P_X_given_N * P_N + b * P_not_N)
-    alpha = chance_correct * if_correct + (1.0 - chance_correct) * P_N
-
-    return ((1.0 - alpha) * P_N) / (alpha * P_not_N)
-
-# Makes strong convexity assumption on both p and b.
-def my_binomial_bound_on_binomial(S, C, coin_prob, P_N=0.5):
-    P_X_given_N = bigfloat_prob_of_count_given_p(C, coin_prob, S)
-    func = (lambda x: lambda y: -1.0 * __my_binomial_bound_on_binomial_helper__(x[0], y, x[1], x[2]))((P_X_given_N, S, P_N))
-    (best_b, neg_evidence) = binary_min_finder(func, 0.0, 1.0)
-    print("Best b: %f" % best_b)
-    return -1.0 * neg_evidence
-"""
-
 
 if __name__ == "__main__":
     (threshold, evidence_bound) = best_binomial_bound_for_binomial(C=133, p=(bigfloat.BigFloat(1.0) / 6.0), P_N=bigfloat.BigFloat(0.5), S=600)
