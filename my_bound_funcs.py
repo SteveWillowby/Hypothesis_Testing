@@ -181,7 +181,7 @@ def __get_worst_meta_binomial_bound_for_inner_threshold__(t, S): #, \
         __get_prob_that_specific_binomial_prob_over_threshold__(\
             y, x[0], x[1])))((t, S))
 
-    (_, worst_value) = search_semi_convex_range(\
+    (binomial_prob, worst_value) = search_semi_convex_range(\
             min_arg=bigfloat.BigFloat(0.0), \
             max_arg=bigfloat.BigFloat(0.5), \
             func=func_to_minimize, find="min", \
@@ -191,6 +191,8 @@ def __get_worst_meta_binomial_bound_for_inner_threshold__(t, S): #, \
             iterations=5, values_per_iteration=50, spread=2.0, \
             max_shrink=100.0, \
             diagnose=False)
+
+    # print("The binomial prob is: %f" % binomial_prob)
 
     __memoized_worst_meta_probs_for_thresholds__[key] = worst_value
     return worst_value
@@ -304,6 +306,7 @@ def best_binomial_bound_for_binomial(C, p, P_N, S):
 
 if __name__ == "__main__":
     (threshold, evidence_bound) = best_binomial_bound_for_binomial(C=133, p=(bigfloat.BigFloat(1.0) / 6.0), P_N=bigfloat.BigFloat(0.5), S=600)
+    # __get_worst_meta_binomial_bound_for_inner_threshold__(bigfloat.BigFloat(1.0) / 1800.0, 600)
     print("And the evidence bound is... %s" % evidence_bound)
     print("   (...with respective threshold of: %s)" % threshold)
     exit(0)
