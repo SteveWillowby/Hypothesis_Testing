@@ -270,41 +270,37 @@ def best_binomial_bound_for_binomial(C, p, P_N, S):
     __memoized_master_values__[key] = (best_threshold, best_value)
     return (best_threshold, best_value)
 
-    """
-    min_thresh = bigfloat.exp2(-1000)
-    # Max thresh is the peak of the 50-50 binomial. Beyond that there can be no
-    #   guarantees, so it's not worth checking.
-    max_thresh = \
-        bigfloat_prob_of_count_given_p(int(S / 2), bigfloat.BigFloat(0.5), S)
+def __normal_approx_for_chance_binomial_over_thresh__(t, p, S):
+    if S * p < 10.0 or S * (1.0 - p) < 10.0:
+        print("  ISSUE! pair (p = %f, S = %d) considered bad " + \
+            "for approximating binomial using normal.")
 
-    log_min_thresh = bigfloat.log2(min_thresh)
-    log_max_thresh = bigfloat.log2(max_thresh)
-    log_increment = (log_max_thresh - log_min_thresh) / (num_thresholds - 1)
+    mu = S * p
+    sigma = bigfloat.sqrt(S * p * (1.0 - p))
+    x = mu + sigma * bigfloat.sqrt(bigfloat.log(sigma * t) / (- bigfloat.const_pi()))
+    print("x = %f" % x)
+    prob_less_than_x = 0.5 * (1.0 + bigfloat.erf((x - mu) / (sigma * bigfloat.sqrt(2))))
+    print("P(X <= x) = %f" % prob_less_than_x)
+    result = 1.0 - 2.0 * (1.0 - prob_less_than_x)
 
-    P_not_N = 1.0 - P_N
-    PN_Combo = P_X_given_N * P_N
-
-    best_value = bigfloat.BigFloat(0.0)
-    for i in range(0, num_thresholds):
-        log_thresh = log_min_thresh + i * log_increment
-        thresh = bigfloat.exp2(log_thresh)
-
-        outer_bound_for_thresh = \
-            __get_worst_meta_binomial_bound_for_inner_threshold__(thresh, S)
-
-        possible_p_star = outer_bound_for_thresh * \
-                              (PN_Combo / (PN_Combo + thresh * P_not_N)) + \
-                          (1.0 - outer_bound_for_thresh) * P_N
-        value = (1.0 - possible_p_star) * P_not_N / (possible_p_star * P_N)
-
-        if value > best_value:
-            best_value = value
-
-    __memoized_master_values__[key] = best_value
-    return best_value
-    """
+    prob_over_t = bigfloat.erf(bigfloat.sqrt(bigfloat.log(sigma * t) / \
+                                             (-2.0 * bigfloat.const_pi())))
+    print("Diff: %s" % (result - prob_over_t))
+    return result
 
 if __name__ == "__main__":
+    bf_context = bigfloat.Context(precision=2000, emax=100000, emin=-100000)
+    bigfloat.setcontext(bf_context)
+    for power in [-1, -2, -3, -4, -10, -100, -1000, -10000]:
+        P_N = bigfloat.exp(power)
+        P_X_given_N = bigfloat.BigFloat(0.00001)
+        n = 601
+        print(my_universal_bound(P_X_given_N, P_N, n))
+
+    for (t, p) in [(0.0001, 0.45), (0.003, 0.32), (0.0000001, 0.437)]:
+        print("%s vs %s" % (__normal_approx_for_chance_binomial_over_thresh__(t, p, 600),
+              __get_prob_that_specific_binomial_prob_over_threshold__(p, t, 600)))
+
     (threshold, evidence_bound) = best_binomial_bound_for_binomial(C=133, p=(bigfloat.BigFloat(1.0) / 6.0), P_N=bigfloat.BigFloat(0.5), S=600)
     # __get_worst_meta_binomial_bound_for_inner_threshold__(bigfloat.BigFloat(1.0) / 1800.0, 600)
     print("And the evidence bound is... %s" % evidence_bound)
