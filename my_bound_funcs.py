@@ -297,11 +297,7 @@ if __name__ == "__main__":
         n = 601
         print(my_universal_bound(P_X_given_N, P_N, n))
 
-    for (t, p) in [(0.0001, 0.45), (0.003, 0.32), (0.0000001, 0.437)]:
-        print("%s vs %s" % (__normal_approx_for_chance_binomial_over_thresh__(t, p, 600),
-              __get_prob_that_specific_binomial_prob_over_threshold__(p, t, 600)))
-
-    (threshold, evidence_bound) = best_binomial_bound_for_binomial(C=133, p=(bigfloat.BigFloat(1.0) / 6.0), P_N=bigfloat.BigFloat(0.5), S=600)
+    (threshold, evidence_bound) = best_binomial_bound_for_binomial(C=100, p=(bigfloat.BigFloat(1.0) / 6.0), P_N=bigfloat.exp2(-40), S=600)
     # __get_worst_meta_binomial_bound_for_inner_threshold__(bigfloat.BigFloat(1.0) / 1800.0, 600)
     print("And the evidence bound is... %s" % evidence_bound)
     print("   (...with respective threshold of: %s)" % threshold)
