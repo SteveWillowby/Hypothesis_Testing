@@ -182,7 +182,13 @@ def visualize_my_binomial_bound_on_binomial(num_flips, coin_prob=0.5, \
 
         P_N_idx = 0
         C_idx += 1
-        bound_values.append([])
+        if C_idx < len(C_vals):
+            bound_values.append([])
+
+    # Save final result.
+    data = (C_idx, P_N_idx, bound_values)
+    with open(filename_for_progress, 'wb') as f:
+        pkl.dump(data, f)
 
     __bb_kill_status__ = "Regular"
 
@@ -196,7 +202,8 @@ def visualize_my_binomial_bound_on_binomial(num_flips, coin_prob=0.5, \
     P_N_idxs = [j for j in range(0, len(P_N_vals))]
     plot_3d_surface(C_idxs, P_N_idxs, z_axis_function, \
         surface_alpha=surface_alpha, marked_points=marked_points, \
-        plot_title="Log_2 of Strength of Evidence Against Null (N) when n = %d" % n, \
+        plot_title="Log_2 of Strength of Evidence Against Null (N) when n = %d" % \
+            num_flips, \
         left_axis_name="Number of Heads (C)", \
         right_axis_name="P(N)", \
         plot_subtitle="")
