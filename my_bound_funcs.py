@@ -289,13 +289,26 @@ def __normal_approx_for_chance_binomial_over_thresh__(t, p, S):
     return result
 
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=2000, emax=100000, emin=-100000)
+    bf_context = bigfloat.Context(precision=20000000, emax=1000000000, emin=-1000000000)
     bigfloat.setcontext(bf_context)
-    for power in [-1, -2, -3, -4, -10, -100, -1000, -10000]:
+    prev_value = bigfloat.BigFloat(1.0)
+    for power in [-1, -2, -3, -4, -10, -100, -1000, -10000, -100000, -1000000]:
         P_N = bigfloat.exp(power)
         P_X_given_N = bigfloat.BigFloat(0.00001)
         n = 601
-        print(my_universal_bound(P_X_given_N, P_N, n))
+        curr_value = my_universal_bound(P_X_given_N, P_N, n)
+
+        alt_m = bigfloat.sqrt(1.0 / (P_X_given_N * (n - 1))) * (n - 1)
+        alt_chance = (1.0 - P_N) * (1.0 - (n - 1) / alt_m)
+        alt_thingy = (P_N * P_X_given_N) / (P_N * P_X_given_N + (1.0 - P_N) / alt_m)
+        alt_p_star = alt_chance * alt_thingy
+        alt_value = ((1.0 - alt_p_star) * P_N) / (alt_p_star * (1.0 - P_N))
+        print(curr_value > alt_value)
+        diff = curr_value - alt_value
+        diff_string = ("%s" % diff)
+        diff_string = diff_string[:30] + "... " + diff_string[-10:]
+        print("          Difference: " + diff_string)
+        prev_value = curr_value
 
     (threshold, evidence_bound) = best_binomial_bound_for_binomial(C=100, p=(bigfloat.BigFloat(1.0) / 6.0), P_N=bigfloat.exp2(-40), S=600)
     # __get_worst_meta_binomial_bound_for_inner_threshold__(bigfloat.BigFloat(1.0) / 1800.0, 600)
