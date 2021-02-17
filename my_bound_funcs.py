@@ -16,6 +16,7 @@ def my_universal_bound(P_X_given_N, P_N, n):
     assert P_N != 0.0
     P_not_N = 1.0 - P_N
     best_m = __best_m__(P_X_given_N, P_N, n)
+    print("best_m = %f" % best_m)
 
     chance_correct = (P_not_N * (1.0 - (n - 1) / best_m))
     if_correct = (P_X_given_N * P_N) / (P_X_given_N * P_N + (1.0 / best_m) * P_not_N)
@@ -23,6 +24,13 @@ def my_universal_bound(P_X_given_N, P_N, n):
     # print(bigfloat.abs(if_correct - if_correct_B) < if_correct)
     p_star = chance_correct * if_correct + (1.0 - chance_correct) * P_N
     return ((1.0 - p_star) * P_N) / (p_star * P_not_N)
+
+def my_universal_bound_max(P_X_given_N, n):
+    a = P_X_given_N
+    b = bigfloat.BigFloat(n - 1)
+
+    the_max = 1.0 / (2.0 * bigfloat.sqrt(a * b) - a * b)
+    return the_max
 
 def my_kind_of_bound_max(P_N):
     assert P_N != 1.0
@@ -294,15 +302,15 @@ if __name__ == "__main__":
     prev_value = bigfloat.BigFloat(1.0)
     for power in [-1, -2, -3, -4, -10, -100, -1000, -10000, -100000, -1000000]:
         P_N = bigfloat.exp(power)
-        P_X_given_N = bigfloat.BigFloat(0.00001)
-        n = 601
+        P_X_given_N = bigfloat.BigFloat(0.00001234)
+        n = 6001
         curr_value = my_universal_bound(P_X_given_N, P_N, n)
 
-        alt_m = bigfloat.sqrt(1.0 / (P_X_given_N * (n - 1))) * (n - 1)
-        alt_chance = (1.0 - P_N) * (1.0 - (n - 1) / alt_m)
-        alt_thingy = (P_N * P_X_given_N) / (P_N * P_X_given_N + (1.0 - P_N) / alt_m)
-        alt_p_star = alt_chance * alt_thingy
-        alt_value = ((1.0 - alt_p_star) * P_N) / (alt_p_star * (1.0 - P_N))
+        alt_value = my_universal_bound_max(P_X_given_N, n)
+        alt_str = "%s" % alt_value
+        alt_str = alt_str[:30] + "..." + alt_str[-10:]
+        print(alt_str)
+
         print(curr_value > alt_value)
         diff = curr_value - alt_value
         diff_string = ("%s" % diff)
