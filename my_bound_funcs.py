@@ -288,7 +288,37 @@ def __normal_approx_for_chance_binomial_over_thresh__(t, p, S):
     print("Diff: %s" % (result - prob_over_t))
     return result
 
+def my_recurring_basic_bound_experiment(n = 2):
+    best_lower_bound = bigfloat.BigFloat(1.0) / (4.0 * (n - 1))
+    best_upper_bound = 1.0 - (n - 1) * best_lower_bound
+
+    print("For n = %d" % n)
+    print("Lower and Upper 0: %f and %f" % (best_lower_bound, best_upper_bound))
+
+    best_m_for_lower = bigfloat.BigFloat(2.0 * (n - 2))
+    for i in range(1, 101):
+        lowest_allowed_m = (n - 1) / (1.0 - best_upper_bound)
+        print("Lowest allowed m: %f" % lowest_allowed_m)
+        best_allowed_m_for_lower = \
+            bigfloat.max(lowest_allowed_m, best_m_for_lower)
+
+        new_lower_bound = bigfloat.max(best_lower_bound, \
+            (1.0 / best_allowed_m_for_lower) * \
+                (1.0 - (n - 2) / best_allowed_m_for_lower))
+
+        if new_lower_bound == best_lower_bound:
+            print("No more improvement.")
+            break
+
+        best_lower_bound = new_lower_bound
+        best_upper_bound = 1.0 - (n - 1) * best_lower_bound
+        print("Lower and Upper %d: %f and %f" % (i, best_lower_bound, best_upper_bound))
+
 if __name__ == "__main__":
+    bf_context = bigfloat.Context(precision=20000, emax=100000, emin=-100000)
+    bigfloat.setcontext(bf_context)
+    my_recurring_basic_bound_experiment(n = 2)
+
     bf_context = bigfloat.Context(precision=20000000, emax=1000000000, emin=-1000000000)
     bigfloat.setcontext(bf_context)
     prev_value = bigfloat.BigFloat(1.0)
