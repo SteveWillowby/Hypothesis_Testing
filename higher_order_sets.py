@@ -16,13 +16,10 @@ def random_dist_over_n_elements(n):
 
 # Rather than returning the full new dist, returns the implied dist over the
 # lower-level sample space.
-#
-# TODO: Speed up with numpy?
-def generate_random_dist_over_dists(basic_dists):
-    dist_over_dists = random_dist_over_n_elements(len(basic_dists))
-    dist_over_dists_T = np.array([dist_over_dists]) # Transpose
+def generate_random_dist_over_dists(basic_dists_transposed):
+    dist_over_dists = random_dist_over_n_elements(len(basic_dists_transposed[0]))
 
-    scale_rows_by_meta_dist = basic_dists.transpose() * dist_over_dists
+    scale_rows_by_meta_dist = basic_dists_transposed * dist_over_dists
     collapsed = np.sum(scale_rows_by_meta_dist, axis=1)
 
     """
@@ -63,13 +60,14 @@ def plot_log_of_likelihood_ratios(likelihood_ratios, coin_tosses, \
     dist_idx_ratio = [bigfloat.BigFloat(i) / (len(ratios) - 1) for \
                         i in range(0, len(ratios))]
 
-    ratios_logged = [bigfloat.log2(r) for r in ratios]
-    plt.plot(dist_idx_ratio, ratios_logged)
+    ratios = [bigfloat.log2(r) for r in ratios]
+    plt.plot(dist_idx_ratio, ratios)
     plt.suptitle("Evidence Against/For Null for %s Order Probs" % order)
     plt.title("For %d heads on %d coin tosses" % (heads, coin_tosses))
     plt.xlabel("Different Probability Functions")
     plt.ylabel("Log_2 of Likelihood Ratio Alternative/Null")
     plt.savefig("coins_%d_of_%d_%s_order.pdf" % (heads, coin_tosses, order))
+    plt.close()
 
 def test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
         coin_tosses=1000, heads=400, \
@@ -119,23 +117,29 @@ def test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
 
     new_dists = full_dist_collection
     for order_idx in range(0, len(higher_order_names)):
-        old_dists = new_dists
+        old_dists_transposed = new_dists.transpose()
         num_dists = num_higher_order_dists[order_idx]
         order_name = higher_order_names[order_idx]
         new_dists = []
-        for _ in range(0, num_dists):
-            new_dists.append(generate_random_dist_over_dists(old_dists))
+        print("Working on %s Order Prob Functions" % order_name)
+        for i in range(0, num_dists):
+            if (i % (num_dists / 100)) == 0:
+                print("    %d percent done" % (i / (num_dists / 100)))
+            new_dists.append(generate_random_dist_over_dists(old_dists_transposed))
         new_dists = np.array(new_dists)
+        print("  Accumulated %s Order Prob Functions" % order_name)
         
+        print("Getting Likelihood Ratios and Plotting")
         likelihood_ratios = [dist[coin_tosses + heads] / dist[heads] for \
                                 dist in new_dists]
 
         plot_log_of_likelihood_ratios(likelihood_ratios, coin_tosses, \
             heads, order=order_name)
+        print("  Obtained Likelihood Ratios and Plotted")
 
 if __name__ == "__main__":
     test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
         coin_tosses=1000, heads=400, \
-        num_binoms=11, num_priors=11, \
-        num_higher_order_dists=[100, 100], \
+        num_binoms=31, num_priors=31, \
+        num_higher_order_dists=[1000, 1000], \
         higher_order_names=["Second", "Third"])
