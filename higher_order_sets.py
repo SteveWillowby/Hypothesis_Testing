@@ -141,5 +141,5 @@ if __name__ == "__main__":
     test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
         coin_tosses=1000, heads=400, \
         num_binoms=31, num_priors=31, \
-        num_higher_order_dists=[1000, 1000], \
-        higher_order_names=["Second", "Third"])
+        num_higher_order_dists=[1000, 1000, 1000], \
+        higher_order_names=["Second", "Third", "Fourth"])
