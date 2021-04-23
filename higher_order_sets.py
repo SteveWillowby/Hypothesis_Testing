@@ -266,13 +266,13 @@ def test_for_a_natural_distance_metric():
     plt.show()
 
 def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
-    epsilon_exponents = [-16, -32, -64, -128]
+    epsilon_exponents = [-16, -32, -64, -128, -512]
     epsilons = [bigfloat.exp2(v) for v in epsilon_exponents]
 
     num_tosses = 100
     start_p = bigfloat.BigFloat(0.0)
     end_p = bigfloat.BigFloat(0.5)
-    num_p = 101
+    num_p = 1001
 
     binomials = {}
     values_of_p = []
@@ -294,9 +294,9 @@ def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
         tv_roc = []
         for base_p in values_of_p:
             next_p = base_p + e
-            js_roc.append(jensen_shannon_distance(binomials[base_p], binomials[next_p]) / e)
-            no_roc.append(naive_overlap_distance(binomials[base_p], binomials[next_p]) / e)
-            h_roc.append(hellinger_distance(binomials[base_p], binomials[next_p]) / e)
+            # js_roc.append(jensen_shannon_distance(binomials[base_p], binomials[next_p]) / e)
+            # no_roc.append(naive_overlap_distance(binomials[base_p], binomials[next_p]) / e)
+            # h_roc.append(hellinger_distance(binomials[base_p], binomials[next_p]) / e)
             tv_roc.append(total_variation_distance_for_binomials(binomials[base_p], binomials[next_p]) / e)
         js_rates_of_change.append(js_roc)
         no_rates_of_change.append(no_roc)
@@ -306,8 +306,9 @@ def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
     for i in range(1, len(js_rates_of_change)):
         # plt.plot(values_of_p, js_rates_of_change[i - 1])
         # plt.plot(values_of_p, no_rates_of_change[i - 1])
-        plt.plot(values_of_p, h_rates_of_change[i - 1])
-        # plt.plot(values_of_p, tv_rates_of_change[i - 1])
+        plt.plot(values_of_p[1:], tv_rates_of_change[i][1:])
+        plt.plot(values_of_p[1:], tv_rates_of_change[i - 1][1:])
+        # plt.plot(values_of_p, h_rates_of_change[i - 1])
         plt.suptitle("JS-Distance(binom(p, %d), binom(p + e, %d) / e" % (num_tosses, num_tosses))
         plt.title("Blue: e = %s, Orange: e = %s" % (np.float128(epsilons[i - 1]), np.float128(epsilons[i])))
         plt.xlabel("p")
@@ -315,7 +316,7 @@ def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
         plt.show()
 
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=2000, emax=100000, emin=-100000)
+    bf_context = bigfloat.Context(precision=20000, emax=100000, emin=-100000)
     bigfloat.setcontext(bf_context)
     test_distance_metrics_for_linearity_of_immediate_space_on_binomials()
     exit(0)
