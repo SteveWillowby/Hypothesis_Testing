@@ -35,6 +35,12 @@ def hellinger_distance(dist_A, dist_B):
     BC = np.sum([bigfloat.sqrt(v) for v in np.multiply(dist_A, dist_B)])
     return bigfloat.sqrt(1.0 - BC)
 
+def total_variation_distance_for_binomials(binom_A, binom_B):
+    zeros = np.array([bigfloat.BigFloat(0.0) for v in binom_A])
+    v1 = np.sum(np.maximum(np.subtract(binom_A, binom_B), zeros))
+    v2 = np.sum(np.maximum(np.subtract(binom_B, binom_A), zeros))
+    return bigfloat.max(v1, v2)
+
 def random_dist_over_n_elements(n):
     # Use uniform between 0 and n rather than 0 and 1 to HOPEFULLY allow more
     # precision.
@@ -65,22 +71,21 @@ def generate_random_dist_over_dists(basic_dists_transposed):
     """
     return collapsed
 
-def n_binomial_dists_over_m_coin_tosses(n, m):
-    p = bigfloat.exp2(-10.0)
-    p_inc = bigfloat.BigFloat(1.0 - (2.0 * p)) / (n - 1)
-    dists = []
-    for _ in range(0, n):
-        # p is the chance of getting a heads
-        p_ratio = p / (1.0 - p)
-        dist = []
-        # compute the probs iteratively so as to save computation on pow and
-        #   choose functions
-        next_prob = bigfloat.pow(1.0 - p, m) # prob of zero heads
-        for c in range(0, m + 1):
-            dist.append(next_prob)
-            next_prob = (next_prob * p_ratio * (m - c)) / (c + 1)
-        dists.append(dist)
+def binomial_dist(n, p):
+    p_ratio = p / (1.0 - p)
+    dist = []
+    next_prob = bigfloat.pow(1.0 - p, n)  # prob of zero heads
+    for h in range(0, n + 1):
+        dist.append(next_prob)
+        next_prob = (next_prob * p_ratio * (n - h)) / (h + 1)
+    return np.array(dist)
 
+def m_binomial_dists_over_n_coin_tosses(m, n, start_p=bigfloat.exp2(-10.0)):
+    p = start_p
+    p_inc = bigfloat.BigFloat(1.0 - (2.0 * start_p)) / (m - 1)
+    dists = []
+    for _ in range(0, m):
+        dists.append(binomial_dist(n, p))
         p += p_inc
     return dists
 
@@ -114,7 +119,7 @@ def test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
 
     print("Creating Alternate Dists")
     alternate_dists = \
-        np.array(n_binomial_dists_over_m_coin_tosses(n=num_binoms, m=coin_tosses))
+        np.array(m_binomial_dists_over_n_coin_tosses(m=num_binoms, n=coin_tosses))
     print("  Alternate Dists Complete")
 
     print("Combining Dists")
@@ -179,11 +184,13 @@ def test_for_a_natural_distance_metric():
     num_tosses = 100
     num_priors = 101
 
+    start_prior = bigfloat.exp2(-10)
     binomial_dists = \
-        np.array(n_binomial_dists_over_m_coin_tosses(n=num_priors, m=num_tosses))
+        np.array(m_binomial_dists_over_n_coin_tosses(m=num_priors, n=num_tosses, \
+            start_p=start_prior))
 
-    prior = bigfloat.exp2(-10)
-    prior_inc = (1.0 - 2.0 * prior) / (num_priors - 1)
+    prior = start_prior
+    prior_inc = (1.0 - 2.0 * start_prior) / (num_priors - 1)
     priors = []
     for i in range(0, num_priors):
         priors.append(prior)
@@ -195,6 +202,7 @@ def test_for_a_natural_distance_metric():
     js_distances = [[jensen_shannon_distance(d, ref_dist) for d in binomial_dists] for ref_dist in reference_dists]
     no_distances = [[naive_overlap_distance(d, ref_dist) for d in binomial_dists] for ref_dist in reference_dists]
     h_distances = [[hellinger_distance(d, ref_dist) for d in binomial_dists] for ref_dist in reference_dists]
+    tv_distances = [[total_variation_distance_for_binomials(d, ref_dist) for d in binomial_dists] for ref_dist in reference_dists]
 
     """
     plt.plot(priors, js_distances[0])
@@ -230,31 +238,87 @@ def test_for_a_natural_distance_metric():
     plt.plot([i for i in range(0, num_tosses + 1)], reference_dists[2])
     plt.show()
 
-    plt.plot(priors, js_distances[0])
-    plt.plot(priors, no_distances[0])
-    plt.plot(priors, h_distances[0])
+    # plt.plot(priors, js_distances[0])
+    # plt.plot(priors, no_distances[0])
+    # plt.plot(priors, h_distances[0])
+    plt.plot(priors, tv_distances[0])
     plt.title("Comparisons of Distances on First Reference")
     plt.xlabel("Proportion Parameter")
     plt.ylabel("Distance from a Reference Distribution")
     plt.show()
 
-    plt.plot(priors, js_distances[1])
-    plt.plot(priors, no_distances[1])
-    plt.plot(priors, h_distances[1])
+    # plt.plot(priors, js_distances[1])
+    # plt.plot(priors, no_distances[1])
+    # plt.plot(priors, h_distances[1])
+    plt.plot(priors, tv_distances[1])
     plt.title("Comparisons of Distances on Second Reference")
     plt.xlabel("Proportion Parameter")
     plt.ylabel("Distance from a Reference Distribution")
     plt.show()
 
-    plt.plot(priors, js_distances[2])
-    plt.plot(priors, no_distances[2])
-    plt.plot(priors, h_distances[2])
+    # plt.plot(priors, js_distances[2])
+    # plt.plot(priors, no_distances[2])
+    # plt.plot(priors, h_distances[2])
+    plt.plot(priors, tv_distances[2])
     plt.title("Comparisons of Distances on Third Reference")
     plt.xlabel("Proportion Parameter")
     plt.ylabel("Distance from a Reference Distribution")
     plt.show()
 
+def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
+    epsilon_exponents = [-16, -32, -64, -128]
+    epsilons = [bigfloat.exp2(v) for v in epsilon_exponents]
+
+    num_tosses = 100
+    start_p = bigfloat.BigFloat(0.0)
+    end_p = bigfloat.BigFloat(0.5)
+    num_p = 101
+
+    binomials = {}
+    values_of_p = []
+    for p_idx in range(0, num_p):
+        base_p = start_p + ((end_p - start_p) * p_idx) / (num_p - 1)
+        values_of_p.append(base_p)
+        binomials[base_p] = binomial_dist(num_tosses, base_p)
+        for e in epsilons:
+            binomials[base_p + e] = binomial_dist(num_tosses, base_p + e)
+
+    js_rates_of_change = []
+    no_rates_of_change = []
+    h_rates_of_change = []
+    tv_rates_of_change = []
+    for e in epsilons:
+        js_roc = []
+        no_roc = []
+        h_roc = []
+        tv_roc = []
+        for base_p in values_of_p:
+            next_p = base_p + e
+            js_roc.append(jensen_shannon_distance(binomials[base_p], binomials[next_p]) / e)
+            no_roc.append(naive_overlap_distance(binomials[base_p], binomials[next_p]) / e)
+            h_roc.append(hellinger_distance(binomials[base_p], binomials[next_p]) / e)
+            tv_roc.append(total_variation_distance_for_binomials(binomials[base_p], binomials[next_p]) / e)
+        js_rates_of_change.append(js_roc)
+        no_rates_of_change.append(no_roc)
+        h_rates_of_change.append(h_roc)
+        tv_rates_of_change.append(tv_roc)
+
+    for i in range(1, len(js_rates_of_change)):
+        # plt.plot(values_of_p, js_rates_of_change[i - 1])
+        # plt.plot(values_of_p, no_rates_of_change[i - 1])
+        plt.plot(values_of_p, h_rates_of_change[i - 1])
+        # plt.plot(values_of_p, tv_rates_of_change[i - 1])
+        plt.suptitle("JS-Distance(binom(p, %d), binom(p + e, %d) / e" % (num_tosses, num_tosses))
+        plt.title("Blue: e = %s, Orange: e = %s" % (np.float128(epsilons[i - 1]), np.float128(epsilons[i])))
+        plt.xlabel("p")
+        plt.ylabel("see title")
+        plt.show()
+
 if __name__ == "__main__":
+    bf_context = bigfloat.Context(precision=2000, emax=100000, emin=-100000)
+    bigfloat.setcontext(bf_context)
+    test_distance_metrics_for_linearity_of_immediate_space_on_binomials()
+    exit(0)
     test_for_a_natural_distance_metric()
 
     test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
