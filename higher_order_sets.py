@@ -4,6 +4,37 @@ import numpy as np
 import bigfloat
 import matplotlib.pyplot as plt
 
+#TODO: Check if these are well-defined on infinite sets and prob functions over
+#       those sets, where the prob function uses this distance as the metric for
+#       the Borel space.
+
+def jensen_shannon_distance(dist_A, dist_B):
+    mid = 0.5 * dist_A + 0.5 * dist_B
+    # Get KL divergences with mid distribution - Use log base 2 to bound things
+    #   to be one at most
+
+    # The following log2 does not seem to work with bigfloats
+    # KL_A = np.sum(np.multiply(dist_A, np.log2(np.divide(dist_A, mid))))
+    # KL_B = np.sum(np.multiply(dist_B, np.log2(np.divide(dist_B, mid))))
+
+    div_A = np.divide(dist_A, mid)
+    div_B = np.divide(dist_B, mid)
+    log2_A = np.array([bigfloat.log2(v) for v in div_A])
+    log2_B = np.array([bigfloat.log2(v) for v in div_B])
+    KL_A = np.sum(np.multiply(dist_A, log2_A))
+    KL_B = np.sum(np.multiply(dist_B, log2_B))
+
+    # Take the square root to convert from JS divergence to JS distance
+    #   (the latter is a metric but the former is not)
+    return bigfloat.sqrt(0.5 * KL_A + 0.5 * KL_B)
+
+def naive_overlap_distance(dist_A, dist_B):
+    return 1.0 - np.sum(np.minimum(dist_A, dist_B))
+
+def hellinger_distance(dist_A, dist_B):
+    BC = np.sum([bigfloat.sqrt(v) for v in np.multiply(dist_A, dist_B)])
+    return bigfloat.sqrt(1.0 - BC)
+
 def random_dist_over_n_elements(n):
     # Use uniform between 0 and n rather than 0 and 1 to HOPEFULLY allow more
     # precision.
@@ -137,9 +168,97 @@ def test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
             heads, order=order_name)
         print("  Obtained Likelihood Ratios and Plotted")
 
+def test_for_a_natural_distance_metric():
+    
+    # jensen_shannon_distance(dist_A, dist_B)
+
+    # naive_overlap_distance(dist_A, dist_B)
+
+    # hellinger_distance(dist_A, dist_B)
+
+    num_tosses = 100
+    num_priors = 101
+
+    binomial_dists = \
+        np.array(n_binomial_dists_over_m_coin_tosses(n=num_priors, m=num_tosses))
+
+    prior = bigfloat.exp2(-10)
+    prior_inc = (1.0 - 2.0 * prior) / (num_priors - 1)
+    priors = []
+    for i in range(0, num_priors):
+        priors.append(prior)
+        prior += prior_inc
+
+    priors = np.array(priors)
+
+    reference_dists = [binomial_dists[0], binomial_dists[int(num_tosses/3)], binomial_dists[int(num_tosses/2)]]
+    js_distances = [[jensen_shannon_distance(d, ref_dist) for d in binomial_dists] for ref_dist in reference_dists]
+    no_distances = [[naive_overlap_distance(d, ref_dist) for d in binomial_dists] for ref_dist in reference_dists]
+    h_distances = [[hellinger_distance(d, ref_dist) for d in binomial_dists] for ref_dist in reference_dists]
+
+    """
+    plt.plot(priors, js_distances[0])
+    plt.plot(priors, js_distances[1])
+    plt.plot(priors, js_distances[2])
+    plt.title("Jensen Shannon Distances of Distributions")
+    plt.xlabel("Proportion Parameter")
+    plt.ylabel("Distance from a Reference Distribution")
+    plt.show()
+
+    plt.plot(priors, no_distances[0])
+    plt.plot(priors, no_distances[1])
+    plt.plot(priors, no_distances[2])
+    plt.title("Naive Overlap Distances of Distributions")
+    plt.xlabel("Proportion Parameter")
+    plt.ylabel("Distance from a Reference Distribution")
+    plt.show()
+
+    plt.plot(priors, h_distances[0])
+    plt.plot(priors, h_distances[1])
+    plt.plot(priors, h_distances[2])
+    plt.title("Hellinger Distances of Distributions")
+    plt.xlabel("Proportion Parameter")
+    plt.ylabel("Distance from a Reference Distribution")
+    plt.show()
+    """
+
+    plt.plot([i for i in range(0, num_tosses + 1)], reference_dists[0])
+    plt.title("Reference Dists")
+    plt.xlabel("Number of Heads")
+    plt.ylabel("Probability")
+    plt.plot([i for i in range(0, num_tosses + 1)], reference_dists[1])
+    plt.plot([i for i in range(0, num_tosses + 1)], reference_dists[2])
+    plt.show()
+
+    plt.plot(priors, js_distances[0])
+    plt.plot(priors, no_distances[0])
+    plt.plot(priors, h_distances[0])
+    plt.title("Comparisons of Distances on First Reference")
+    plt.xlabel("Proportion Parameter")
+    plt.ylabel("Distance from a Reference Distribution")
+    plt.show()
+
+    plt.plot(priors, js_distances[1])
+    plt.plot(priors, no_distances[1])
+    plt.plot(priors, h_distances[1])
+    plt.title("Comparisons of Distances on Second Reference")
+    plt.xlabel("Proportion Parameter")
+    plt.ylabel("Distance from a Reference Distribution")
+    plt.show()
+
+    plt.plot(priors, js_distances[2])
+    plt.plot(priors, no_distances[2])
+    plt.plot(priors, h_distances[2])
+    plt.title("Comparisons of Distances on Third Reference")
+    plt.xlabel("Proportion Parameter")
+    plt.ylabel("Distance from a Reference Distribution")
+    plt.show()
+
 if __name__ == "__main__":
+    test_for_a_natural_distance_metric()
+
     test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
-        coin_tosses=1000, heads=400, \
+        coin_tosses=100, heads=40, \
         num_binoms=31, num_priors=31, \
         num_higher_order_dists=[1000, 1000, 1000], \
         higher_order_names=["Second", "Third", "Fourth"])
