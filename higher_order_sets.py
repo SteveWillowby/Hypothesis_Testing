@@ -35,6 +35,12 @@ def hellinger_distance(dist_A, dist_B):
     BC = np.sum([bigfloat.sqrt(v) for v in np.multiply(dist_A, dist_B)])
     return bigfloat.sqrt(1.0 - BC)
 
+def L1_distance(dist_A, dist_B):
+    return np.sum(np.abs(dist_A - dist_B))
+
+def L2_distance(dist_A, dist_B):
+    return bigfloat.sqrt(np.sum(np.square(dist_A - dist_B)))
+
 def total_variation_distance_for_binomials(binom_A, binom_B):
     zeros = np.array([bigfloat.BigFloat(0.0) for v in binom_A])
     v1 = np.sum(np.maximum(np.subtract(binom_A, binom_B), zeros))
@@ -272,7 +278,7 @@ def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
     num_tosses = 10
     start_p = bigfloat.BigFloat(0.0)
     end_p = bigfloat.BigFloat(0.5)
-    num_p = 10001
+    num_p = 1001
 
     binomials = {}
     values_of_p = []
@@ -285,29 +291,38 @@ def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
 
     js_rates_of_change = []
     no_rates_of_change = []
+    l1_rates_of_change = []
+    l2_rates_of_change = []
     h_rates_of_change = []
     tv_rates_of_change = []
     for e in epsilons:
         js_roc = []
         no_roc = []
+        l1_roc = []
+        l2_roc = []
         h_roc = []
         tv_roc = []
         for base_p in values_of_p:
             next_p = base_p + e
             # js_roc.append(jensen_shannon_distance(binomials[base_p], binomials[next_p]) / e)
             no_roc.append(naive_overlap_distance(binomials[base_p], binomials[next_p]) / e)
+            l1_roc.append(L1_distance(binomials[base_p], binomials[next_p]) / e)
+            l2_roc.append(L2_distance(binomials[base_p], binomials[next_p]) / e)
             # h_roc.append(hellinger_distance(binomials[base_p], binomials[next_p]) / e)
             tv_roc.append(total_variation_distance_for_binomials(binomials[base_p], binomials[next_p]) / e)
         js_rates_of_change.append(js_roc)
         no_rates_of_change.append(no_roc)
+        l1_rates_of_change.append(l1_roc)
+        l2_rates_of_change.append(l2_roc)
         h_rates_of_change.append(h_roc)
         tv_rates_of_change.append(tv_roc)
 
     for i in range(1, len(js_rates_of_change)):
         # plt.plot(values_of_p, js_rates_of_change[i - 1])
         # plt.plot(values_of_p[1:], no_rates_of_change[i - 1][1:])
+        plt.plot(values_of_p, l1_rates_of_change[i])
         plt.plot(values_of_p, tv_rates_of_change[i])
-        plt.plot(values_of_p, tv_rates_of_change[i - 1])
+        plt.plot(values_of_p, l2_rates_of_change[i])
         # plt.plot(values_of_p, h_rates_of_change[i - 1])
         plt.suptitle("TV-Distance(binom(p, %d), binom(p + e, %d) / e" % (num_tosses, num_tosses))
         plt.title("Blue: e = %s, Orange: e = %s" % (np.float128(epsilons[i - 1]), np.float128(epsilons[i])))
