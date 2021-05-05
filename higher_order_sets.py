@@ -3,6 +3,7 @@ import random
 import numpy as np
 import bigfloat
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 #TODO: Check if these are well-defined on infinite sets and prob functions over
 #       those sets, where the prob function uses this distance as the metric for
@@ -41,26 +42,42 @@ def L1_distance(dist_A, dist_B):
 def L2_distance(dist_A, dist_B):
     return bigfloat.sqrt(np.sum(np.square(dist_A - dist_B)))
 
-def total_variation_distance_for_binomials(binom_A, binom_B):
-    zeros = np.array([bigfloat.BigFloat(0.0) for v in binom_A])
-    v1 = np.sum(np.maximum(np.subtract(binom_A, binom_B), zeros))
-    v2 = np.sum(np.maximum(np.subtract(binom_B, binom_A), zeros))
+def total_variation_distance(dist_A, dist_B):
+    zeros = np.array([bigfloat.BigFloat(0.0) for v in dist_A])
+    v1 = np.sum(np.maximum(np.subtract(dist_A, dist_B), zeros))
+    v2 = np.sum(np.maximum(np.subtract(dist_B, dist_A), zeros))
     return bigfloat.max(v1, v2)
 
-def random_dist_over_n_elements(n):
+# Only instantiate an RNG once.
+__higher_order_reference_rng__ = None
+
+def random_L2_dist_over_n_elements(n):
     # Use uniform between 0 and n rather than 0 and 1 to HOPEFULLY allow more
     # precision.
-    rng = np.random.default_rng()
+    global __higher_order_reference_rng__
+    if __higher_order_reference_rng__ is None:
+        __higher_order_reference_rng__ = np.random.default_rng()
+    rng = __higher_order_reference_rng__
+
     basic_numbers = [np.float64(0.0)] + \
         [rng.uniform(0.0, n) for i in range(0, n - 1)] + [np.float64(n)]
     basic_numbers.sort()
     differences = np.array([basic_numbers[i + 1] - basic_numbers[i] for i in range(0, n)], bigfloat.BigFloat)
     return differences / n
 
+def random_L1_dist_over_n_elements(n):
+    global __higher_order_reference_rng__
+    if __higher_order_reference_rng__ is None:
+        __higher_order_reference_rng__ = np.random.default_rng()
+    rng = __higher_order_reference_rng__
+    raw_coords = rng.gamma(1.0, 1.0, n)
+    raw_coords = np.array([bigfloat.BigFloat(x) for x in raw_coords])
+    return raw_coords / np.sum(raw_coords)
+
 # Rather than returning the full new dist, returns the implied dist over the
 # lower-level sample space.
 def generate_random_dist_over_dists(basic_dists_transposed):
-    dist_over_dists = random_dist_over_n_elements(len(basic_dists_transposed[0]))
+    dist_over_dists = random_L1_dist_over_n_elements(len(basic_dists_transposed[0]))
 
     scale_rows_by_meta_dist = basic_dists_transposed * dist_over_dists
     collapsed = np.sum(scale_rows_by_meta_dist, axis=1)
@@ -111,23 +128,111 @@ def plot_log_of_likelihood_ratios(likelihood_ratios, coin_tosses, \
     plt.savefig("coins_%d_of_%d_%s_order.pdf" % (heads, coin_tosses, order))
     plt.close()
 
-def test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
-        coin_tosses=1000, heads=400, \
-        num_binoms=101, num_priors=101, \
-        num_higher_order_dists=[10000, 10000], \
-        higher_order_names=["Second", "Third"]):
+def representative_sampling_of_singly_parametrized_dists(\
+        num_samples, alt_dist_generator, alt_dist_param_bounds, \
+        num_param_options=1001):
+
+    param_min = alt_dist_param_bounds[0]
+    param_max = alt_dist_param_bounds[1]
+
+    param_inc = (param_max - param_min) / (num_param_options - 1)
+
+    epsilon = bigfloat.exp2(-128)
+
+    distributions = []
+    param_derivative_multiples = []
+    for i in range(0, num_param_options):
+        param = param_min + ((param_max - param_min) * i) / \
+                                (num_param_options - 1)
+        alt_dist = alt_dist_generator(param)
+        distributions.append(alt_dist)
+
+        if param > param_min + (param_max - param_min) / 2:
+            deriv_param = param - epsilon
+        else:
+            deriv_param = param + epsilon
+
+        deriv_dist = alt_dist_generator(deriv_param)
+        param_derivative_multiples.append(\
+            total_variation_distance(alt_dist, deriv_dist) / epsilon)
+
+    param_derivative_multiples = np.array(param_derivative_multiples)
+    param_probabilities = param_derivative_multiples / \
+                            np.sum(param_derivative_multiples)
+
+    global __higher_order_reference_rng__
+    if __higher_order_reference_rng__ is None:
+        __higher_order_reference_rng__ = np.random.default_rng()
+    rng = __higher_order_reference_rng__
+
+    dists_weights = rng.uniform(0.0, num_samples, num_samples)
+    dists_weights = [bigfloat.BigFloat(x) / num_samples for x in dists_weights]
+    dists_weights.sort()
+
+    sampled_dists = []
+
+    cumulative_param_probs = []
+    cp = bigfloat.BigFloat(0.0)
+    for p in param_probabilities:
+        cp += p
+        cumulative_param_probs.append(cp)
+    cumulative_param_probs[-1] = bigfloat.BigFloat(1.0)
+
+    dw_idx = 0
+    param_idx = 0
+    while dw_idx < num_samples:
+        if dists_weights[dw_idx] < cumulative_param_probs[param_idx]:
+            sampled_dists.append(distributions[param_idx])
+            dw_idx += 1
+        else:
+            param_idx += 1
+
+    return sampled_dists
+
+def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
+        coin_tosses=50, heads=20, \
+        num_dists_by_order=[200, 200, 200, 200], \
+        order_names=["First", "Second", "Third", "Fourth"]):
+
+    binomial = (lambda n : (lambda p : binomial_dist(n, p)))(coin_tosses)
 
     print("Creating Null Dist")
-    null_dist = \
-        np.array([bigfloat_prob_of_count_given_p(c, null_p, coin_tosses) for \
-            c in range(0, coin_tosses + 1)])
+    null_dist = binomial_dist(coin_tosses, null_p)
     print("  Null Dist Complete")
 
-    print("Creating Alternate Dists")
-    alternate_dists = \
-        np.array(m_binomial_dists_over_n_coin_tosses(m=num_binoms, n=coin_tosses))
-    print("  Alternate Dists Complete")
+    # If ensure_null_present is true, then the sample is biased and not QUITE
+    #   representative.
+    ensure_null_present = False
+    done = False
+    while not done:
+        print("Creating Representative First Order Dist Sample")
+        first_order_dists = \
+            representative_sampling_of_singly_parametrized_dists(
+                num_samples=num_dists_by_order[0], \
+                alt_dist_generator=binomial, \
+                alt_dist_param_bounds = [bigfloat.exp2(-20), \
+                                         1.0 - bigfloat.exp2(-20)], \
+                num_param_options=(num_dists_by_order[0] * 2 + 1))
 
+        print("  Sample Complete")
+        if ensure_null_present:
+            for dist in first_order_dists:
+                if dist.all() == null_dist.all():
+                    done = True
+                    break
+            if not done:
+                print("Issue! Didn't get null dist in 1st order dists - retrying.")
+        else:
+            done = True
+
+    print("Generating Uniform Second Order Dist")
+    uniform_second_order_dist = first_order_dists[0]
+    for i in range(1, len(first_order_dists)):
+        uniform_second_order_dist += first_order_dists[i]
+    uniform_second_order_dist /= len(first_order_dists)
+    print("  Generating Uniform Second Order Dist Complete")
+
+    """
     print("Combining Dists")
     full_dist_collection = []
     prior = bigfloat.exp2(-10.0)
@@ -139,45 +244,61 @@ def test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
                                             (1.0 - prior) * alternate_dist)))
         prior += prior_inc
     full_dist_collection = np.array(full_dist_collection)
-    print("Combining Dists Complete")
+    print("  Combining Dists Complete")
 
     # Now P(flip c heads) = dist[c] + dist[coin_tosses + c]
     # P(flip c heads | N) = dist[c]
     # P(flip c heads | not-N) = dist[coin_tosses + c]
     # P(N) = sum( dist[0...coin_tosses) )
     # P(not-N) = sum( dist[coin_tosses...end) )
+    """
 
-    print("Getting Likelihood Ratios")
-    likelihood_ratios = [dist[coin_tosses + heads] / dist[heads] for \
-                            dist in full_dist_collection]
-    print("  Getting Likelihod Ratios Complete")
+    print("Getting Chances of %d Heads from %d Tosses" % (heads, coin_tosses))
+    first_order_chances = [dist[heads] for dist in first_order_dists]
+    first_order_chances.sort()
+    print("  Getting Chances Complete")
 
-    print("Plotting Likelihood Ratios")
-    plot_log_of_likelihood_ratios(likelihood_ratios, coin_tosses, \
-        heads, order="First")
-    print("  Plotting Likelihood Ratios Complete")
+    orders_chances = [first_order_chances]
 
-    new_dists = full_dist_collection
-    for order_idx in range(0, len(higher_order_names)):
+    new_dists = np.array(first_order_dists)
+    for order_idx in range(1, len(num_dists_by_order)):
         old_dists_transposed = new_dists.transpose()
-        num_dists = num_higher_order_dists[order_idx]
-        order_name = higher_order_names[order_idx]
+        num_dists = num_dists_by_order[order_idx]
+        order_name = order_names[order_idx]
         new_dists = []
         print("Working on %s Order Prob Functions" % order_name)
         for i in range(0, num_dists):
-            if (i % (num_dists / 100)) == 0:
-                print("    %d percent done" % (i / (num_dists / 100)))
             new_dists.append(generate_random_dist_over_dists(old_dists_transposed))
         new_dists = np.array(new_dists)
         print("  Accumulated %s Order Prob Functions" % order_name)
-        
-        print("Getting Likelihood Ratios and Plotting")
-        likelihood_ratios = [dist[coin_tosses + heads] / dist[heads] for \
-                                dist in new_dists]
 
-        plot_log_of_likelihood_ratios(likelihood_ratios, coin_tosses, \
-            heads, order=order_name)
-        print("  Obtained Likelihood Ratios and Plotted")
+        order_chances = [dist[heads] for dist in new_dists]
+        order_chances.sort()
+        orders_chances.append(order_chances)
+
+    print("Plotting Ordered Chances of %d heads from %d Tosses" % \
+            (heads, coin_tosses))
+    for i in range(0, len(orders_chances)):
+        order_chances = orders_chances[i]
+        x_axis = [bigfloat.BigFloat(j) / (len(order_chances) - 1) \
+            for j in range(0, len(order_chances))]
+        plt.plot(x_axis, order_chances)
+
+    plt.plot([0, 1], [uniform_second_order_dist[heads], uniform_second_order_dist[heads]], linestyle="dashed")
+
+    suptitle = "Representative Chances of %d Heads on %d Tosses" % \
+        (heads, coin_tosses)
+    title = "For"
+    for i in range(0, len(order_names) - 1):
+        title += " %s," % order_names[i]
+    title += ", and %s Order Confidences" % order_names[-1]
+    plt.suptitle(suptitle)
+    plt.title(title)
+    plt.xlabel("Just Indexing Prob Functions...")
+    plt.ylabel("Chance of %d Heads on %d Tosses" % (heads, coin_tosses))
+    plt.show()
+
+    print("  Plotting Ordered Chances Complete")
 
 def test_for_a_natural_distance_metric():
     
@@ -330,15 +451,35 @@ def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
         plt.ylabel("see title")
         plt.show()
 
+def compare_L1_and_L2_dist_generation():
+    L1_points = [random_L1_dist_over_n_elements(3) for i in range(0, 5000)]
+    L2_points = [random_L2_dist_over_n_elements(3) for i in range(0, 5000)]
+
+    fig = plt.figure()
+    # The 111 is necessary for some weird reason
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(1, 0)
+    ax.scatter([np.float64(x[0]) for x in L1_points], [np.float64(x[1]) for x in L1_points], [np.float64(x[2]) for x in L1_points], marker='o', alpha=0.02)
+    plt.show()
+    plt.close()
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(1, 0)
+    ax.scatter([np.float64(x[0]) for x in L2_points], [np.float64(x[1]) for x in L2_points], [np.float64(x[2]) for x in L2_points], marker='o', alpha=0.02)
+    plt.show()
+
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=20000, emax=100000, emin=-100000)
+    bf_context = bigfloat.Context(precision=2000, emax=10000, emin=-10000)
     bigfloat.setcontext(bf_context)
+
+    test_for_higher_order_convergence_with_binomials()
+    exit(0)
+
+    # compare_L1_and_L2_dist_generation()
+    # exit(0)
+
     test_distance_metrics_for_linearity_of_immediate_space_on_binomials()
     exit(0)
     test_for_a_natural_distance_metric()
-
-    test_for_higher_order_convergence_on_single_binomial(null_p=0.5, \
-        coin_tosses=100, heads=40, \
-        num_binoms=31, num_priors=31, \
-        num_higher_order_dists=[1000, 1000, 1000], \
-        higher_order_names=["Second", "Third", "Fourth"])
