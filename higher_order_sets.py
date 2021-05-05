@@ -94,6 +94,11 @@ def generate_random_dist_over_dists(basic_dists_transposed):
     """
     return collapsed
 
+def collapse_dist_to_implied(basic_dists_transposed, dist_over_dists):
+    scale_rows_by_meta_dist = basic_dists_transposed * dist_over_dists
+    collapsed = np.sum(scale_rows_by_meta_dist, axis=1)
+    return collapsed
+
 def binomial_dist(n, p):
     p_ratio = p / (1.0 - p)
     dist = []
@@ -191,7 +196,7 @@ def representative_sampling_of_singly_parametrized_dists(\
 
 def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=20, \
-        num_dists_by_order=[200, 200, 200, 200], \
+        num_dists_by_order=[1000, 1000, 1000, 1000], \
         order_names=["First", "Second", "Third", "Fourth"]):
 
     binomial = (lambda n : (lambda p : binomial_dist(n, p)))(coin_tosses)
@@ -212,7 +217,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 alt_dist_generator=binomial, \
                 alt_dist_param_bounds = [bigfloat.exp2(-20), \
                                          1.0 - bigfloat.exp2(-20)], \
-                num_param_options=(num_dists_by_order[0] * 2 + 1))
+                num_param_options=(num_dists_by_order[0] * 10 + 1))
 
         print("  Sample Complete")
         if ensure_null_present:
@@ -231,6 +236,13 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         uniform_second_order_dist += first_order_dists[i]
     uniform_second_order_dist /= len(first_order_dists)
     print("  Generating Uniform Second Order Dist Complete")
+
+    print("Plotting Uniform Second Order Dist")
+    plt.plot([i for i in range(0, coin_tosses + 1)], uniform_second_order_dist)
+    plt.title("Dist Over Num Heads Implied by Uniform Second Order Dist")
+    plt.savefig("second_order_uniform_over_heads.pdf")
+    plt.close()
+    print("  Plotting of Uniform Second Order Dist Complete")
 
     """
     print("Combining Dists")
@@ -296,7 +308,8 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.title(title)
     plt.xlabel("Just Indexing Prob Functions...")
     plt.ylabel("Chance of %d Heads on %d Tosses" % (heads, coin_tosses))
-    plt.show()
+    plt.savefig("higher_order_convergence.pdf")
+    plt.close()
 
     print("  Plotting Ordered Chances Complete")
 
