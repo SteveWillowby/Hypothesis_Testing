@@ -196,7 +196,7 @@ def representative_sampling_of_singly_parametrized_dists(\
 
 def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=20, \
-        num_dists_by_order=[1000, 1000, 1000, 1000], \
+        num_dists_by_order=[5000, 4000, 3000, 2000], \
         order_names=["First", "Second", "Third", "Fourth"]):
 
     binomial = (lambda n : (lambda p : binomial_dist(n, p)))(coin_tosses)
