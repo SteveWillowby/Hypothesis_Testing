@@ -100,6 +100,10 @@ def collapse_dist_to_implied(basic_dists_transposed, dist_over_dists):
     collapsed = np.sum(scale_rows_by_meta_dist, axis=1)
     return collapsed
 
+def alt_binomial_dist(n, p):
+    rev_dist = binomial_dist(n, 1.0 - p)
+    return np.flip(rev_dist)
+
 def binomial_dist(n, p):
     if p == bigfloat.BigFloat(0.0):
         return np.array([bigfloat.BigFloat(1.0)] + \
@@ -569,7 +573,7 @@ def find_diameter_of_binomials_ball(binomial_generator, a, b):
 
     func = (lambda args: (lambda p: __bin_diameter_finder_helper__(p, args[0], args[1], args[2])))((binomial_generator, bin_a, bin_b))
     
-    (best_arg, diameter) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-40), error_depth=1)
+    (best_arg, diameter) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-120), error_depth=1)
     return diameter
 
 def __bin_split_point_finder_helper__(p, bg, a, b):
@@ -580,11 +584,11 @@ def find_split_point_of_binomials_ball(binomial_generator, a, b):
 
     func = (lambda args: (lambda p: __bin_split_point_finder_helper__(p, args[0], args[1], args[2])))((binomial_generator, a, b))
 
-    (split_point, best_func) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-40), error_depth=1)
+    (split_point, best_func) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-120), error_depth=1)
     return split_point
 
 def test_uniformity_idea_existence_on_binomials():
-    binomial_10_tosses = (lambda n : (lambda p : binomial_dist(n, p)))(10)
+    binomial_10_tosses = (lambda n : (lambda p : alt_binomial_dist(n, p)))(10)
     zero_mark = bigfloat.BigFloat(0.0)
     half_mark = bigfloat.BigFloat(0.5)
     full_mark = bigfloat.BigFloat(1.0)
@@ -593,7 +597,7 @@ def test_uniformity_idea_existence_on_binomials():
     second_half_diam = find_diameter_of_binomials_ball(binomial_10_tosses, half_mark, full_mark)
 
     # Num characters
-    chars = 10
+    chars = 12
 
     print("Sanity Check: %s == %s ? (should be yes)" % \
         (str(first_half_diam)[:chars], str(second_half_diam)[:chars]))
@@ -627,6 +631,9 @@ def test_uniformity_idea_existence_on_binomials():
     three_eighths_mark = \
         find_split_point_of_binomials_ball(binomial_10_tosses, quarter_mark, half_mark)
 
+    another_quarter_diam = find_diameter_of_binomials_ball(binomial_10_tosses, eighth_mark, three_eighths_mark)
+    print("Another Quarter: %s" % (str(another_quarter_diam)[:chars]))
+
     test_diam_one = \
         find_diameter_of_binomials_ball(binomial_10_tosses, zero_mark, eighth_mark)
 
@@ -644,8 +651,33 @@ def test_uniformity_idea_existence_on_binomials():
         (str(test_diam_one)[:chars], str(test_diam_two)[:chars], \
          str(test_diam_three)[:chars], str(test_diam_four)[:chars]))
 
+    sixteenth_mark = \
+        find_split_point_of_binomials_ball(binomial_10_tosses, zero_mark, eighth_mark)
+
+    three_sixteenths_mark = \
+        find_split_point_of_binomials_ball(binomial_10_tosses, eighth_mark, quarter_mark)
+
+    test_diam_one = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, zero_mark, sixteenth_mark)
+
+    test_diam_two = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, sixteenth_mark, eighth_mark)
+
+    test_diam_three = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, eighth_mark, three_sixteenths_mark)
+
+    test_diam_four = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, three_sixteenths_mark, quarter_mark)
+
+    print("Sixteenths:")
+    print("  %s == %s == %s == %s ?" % \
+        (str(test_diam_one)[:chars], str(test_diam_two)[:chars], \
+         str(test_diam_three)[:chars], str(test_diam_four)[:chars]))
+
+    print("So... jury is still out?")
+
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=2000, emax=10000, emin=-10000)
+    bf_context = bigfloat.Context(precision=20000, emax=10000, emin=-10000)
     bigfloat.setcontext(bf_context)
 
     test_uniformity_idea_existence_on_binomials()
