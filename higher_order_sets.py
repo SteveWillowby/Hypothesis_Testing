@@ -1,6 +1,7 @@
 from comb_and_prob_funcs import *
 import random
 import numpy as np
+import optimizing
 import bigfloat
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -100,6 +101,12 @@ def collapse_dist_to_implied(basic_dists_transposed, dist_over_dists):
     return collapsed
 
 def binomial_dist(n, p):
+    if p == bigfloat.BigFloat(0.0):
+        return np.array([bigfloat.BigFloat(1.0)] + \
+            [bigfloat.BigFloat(0.0) for i in range(0, n)])
+    elif p == bigfloat.BigFloat(1.0):
+        return np.array([bigfloat.BigFloat(0.0) for i in range(0, n)] + \
+            [bigfloat.BigFloat(1.0)])
     p_ratio = p / (1.0 - p)
     dist = []
     next_prob = bigfloat.pow(1.0 - p, n)  # prob of zero heads
@@ -133,8 +140,8 @@ def plot_log_of_likelihood_ratios(likelihood_ratios, coin_tosses, \
     plt.savefig("coins_%d_of_%d_%s_order.pdf" % (heads, coin_tosses, order))
     plt.close()
 
-def representative_sampling_of_singly_parametrized_dists(\
-        num_samples, alt_dist_generator, alt_dist_param_bounds, \
+def singly_parametrized_dists_and_derivatives(\
+        alt_dist_generator, alt_dist_param_bounds, \
         num_param_options=1001):
 
     param_min = alt_dist_param_bounds[0]
@@ -162,6 +169,17 @@ def representative_sampling_of_singly_parametrized_dists(\
             total_variation_distance(alt_dist, deriv_dist) / epsilon)
 
     param_derivative_multiples = np.array(param_derivative_multiples)
+
+    return (distributions, param_derivative_multiples)
+
+def representative_sampling_of_singly_parametrized_dists(\
+        num_samples, alt_dist_generator, alt_dist_param_bounds, \
+        num_param_options=1001):
+
+    (distributions, param_derivative_multiples) = \
+        singly_parametrized_dists_and_derivatives(alt_dist_generator, \
+            alt_dist_param_bounds, num_param_options)
+
     param_probabilities = param_derivative_multiples / \
                             np.sum(param_derivative_multiples)
 
@@ -483,9 +501,155 @@ def compare_L1_and_L2_dist_generation():
     ax.scatter([np.float64(x[0]) for x in L2_points], [np.float64(x[1]) for x in L2_points], [np.float64(x[2]) for x in L2_points], marker='o', alpha=0.02)
     plt.show()
 
+# Conclusion: TV(Ci(x), Ci(y)) =/= integral_{x to y} (lim e -> 0 TV(Ci(p), Ci(p + e)) / e) dp
+def compare_so_called_derivatives_to_integral():
+
+    binomial_10_tosses = (lambda n : (lambda p : binomial_dist(n, p)))(10)
+
+    num_binomials = 201
+    print("Generating %d Binomials and 'Derivatives'..." % num_binomials)
+
+    param_min_and_max = [bigfloat.exp2(-20), \
+                         1.0 - bigfloat.exp2(-20)]
+
+    (distributions, param_derivs) = \
+        singly_parametrized_dists_and_derivatives(\
+            alt_dist_generator=binomial_10_tosses, \
+            alt_dist_param_bounds = param_min_and_max, \
+            num_param_options=num_binomials)
+
+    print("  Finished Generating Binomials and 'Derivatives.'")
+
+    print("Generating %d Pairwise Distances..." % (num_binomials * (num_binomials - 1)))
+    pairwise_distances = {}
+    for i in range(0, num_binomials):
+        for j in range(i + 1, num_binomials):
+            pairwise_distances[(i, j)] = total_variation_distance(\
+                distributions[i], distributions[j])
+    print("  Finished Generating Pairwise Distances.")
+
+    print("Generating Cumulative Sums...")
+    c = bigfloat.BigFloat(0)
+    param_cumulatives = []
+    for i in range(0, num_binomials):
+        c += param_derivs[i]
+        param_cumulatives.append(c)
+    print("  Finished Generating Cumulative Sums.")
+
+    print("Generating %d Pairwise 'Integrals'..." % (num_binomials * (num_binomials - 1)))
+    pairwise_integrals = {}
+    diff_ratios = []
+    dp_di = (param_min_and_max[1] - param_min_and_max[0]) / (num_binomials - 1)
+    for i in range(0, num_binomials):
+        for j in range(i + 1, num_binomials):
+            pairwise_integrals[(i, j)] = (param_cumulatives[j] - param_cumulatives[i]) * dp_di
+            diff_ratio = bigfloat.abs(pairwise_integrals[(i, j)] - pairwise_distances[(i, j)]) / \
+                  (pairwise_integrals[(i, j)] + pairwise_distances[(i, j)])
+            if j == (num_binomials - 1) and i == 0:
+                print("    %s" % pairwise_distances[(i, j)])
+                print("    vs")
+                print("    %s" % pairwise_integrals[(i, j)])
+            diff_ratios.append((diff_ratio, (float(i) / (num_binomials - 1), float(j) / (num_binomials - 1))))
+    diff_ratios.sort(reverse=True)
+    print("  Finished Generating Pairwise 'Integrals.'")
+
+    print(diff_ratios[0])
+    print(diff_ratios[1])
+    print(diff_ratios[2])
+
+def __bin_diameter_finder_helper__(p, bg, bin_a, bin_b):
+    bin_p = bg(p)
+    return bigfloat.max(total_variation_distance(bin_a, bin_p), \
+                        total_variation_distance(bin_b, bin_p))
+
+def find_diameter_of_binomials_ball(binomial_generator, a, b):
+    # print("  Working for (%f, %f)" % (a, b))
+    bin_a = binomial_generator(a)
+    bin_b = binomial_generator(b)
+
+    func = (lambda args: (lambda p: __bin_diameter_finder_helper__(p, args[0], args[1], args[2])))((binomial_generator, bin_a, bin_b))
+    
+    (best_arg, diameter) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-40), error_depth=1)
+    return diameter
+
+def __bin_split_point_finder_helper__(p, bg, a, b):
+    return bigfloat.max(find_diameter_of_binomials_ball(bg, a, p), \
+                        find_diameter_of_binomials_ball(bg, p, b))
+
+def find_split_point_of_binomials_ball(binomial_generator, a, b):
+
+    func = (lambda args: (lambda p: __bin_split_point_finder_helper__(p, args[0], args[1], args[2])))((binomial_generator, a, b))
+
+    (split_point, best_func) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-40), error_depth=1)
+    return split_point
+
+def test_uniformity_idea_existence_on_binomials():
+    binomial_10_tosses = (lambda n : (lambda p : binomial_dist(n, p)))(10)
+    zero_mark = bigfloat.BigFloat(0.0)
+    half_mark = bigfloat.BigFloat(0.5)
+    full_mark = bigfloat.BigFloat(1.0)
+
+    first_half_diam = find_diameter_of_binomials_ball(binomial_10_tosses, zero_mark, half_mark)
+    second_half_diam = find_diameter_of_binomials_ball(binomial_10_tosses, half_mark, full_mark)
+
+    # Num characters
+    chars = 10
+
+    print("Sanity Check: %s == %s ? (should be yes)" % \
+        (str(first_half_diam)[:chars], str(second_half_diam)[:chars]))
+
+    quarter_mark = \
+        find_split_point_of_binomials_ball(binomial_10_tosses, zero_mark, half_mark)
+
+    three_fourths_mark = \
+        find_split_point_of_binomials_ball(binomial_10_tosses, half_mark, full_mark)
+
+    test_diam_one = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, zero_mark, quarter_mark)
+
+    test_diam_two = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, quarter_mark, half_mark)
+
+    test_diam_three = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, half_mark, three_fourths_mark)
+
+    test_diam_four = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, three_fourths_mark, full_mark)
+
+    print("Quarters:")
+    print("  %s == %s == %s == %s ?" % \
+        (str(test_diam_one)[:chars], str(test_diam_two)[:chars], \
+         str(test_diam_three)[:chars], str(test_diam_four)[:chars]))
+
+    eighth_mark = \
+        find_split_point_of_binomials_ball(binomial_10_tosses, zero_mark, quarter_mark)
+
+    three_eighths_mark = \
+        find_split_point_of_binomials_ball(binomial_10_tosses, quarter_mark, half_mark)
+
+    test_diam_one = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, zero_mark, eighth_mark)
+
+    test_diam_two = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, eighth_mark, quarter_mark)
+
+    test_diam_three = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, quarter_mark, three_eighths_mark)
+
+    test_diam_four = \
+        find_diameter_of_binomials_ball(binomial_10_tosses, three_eighths_mark, half_mark)
+
+    print("Eighths:")
+    print("  %s == %s == %s == %s ?" % \
+        (str(test_diam_one)[:chars], str(test_diam_two)[:chars], \
+         str(test_diam_three)[:chars], str(test_diam_four)[:chars]))
+
 if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=2000, emax=10000, emin=-10000)
     bigfloat.setcontext(bf_context)
+
+    test_uniformity_idea_existence_on_binomials()
+    exit(0)
 
     test_for_higher_order_convergence_with_binomials()
     exit(0)

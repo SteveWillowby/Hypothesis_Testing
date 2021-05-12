@@ -2,7 +2,7 @@ import bigfloat
 import matplotlib.pyplot as plt
 
 # Assumes function is convex
-def binary_min_finder(func, low, high, tol=bigfloat.BigFloat(2.0**(-30)), error_depth=1):
+def binary_min_finder(func, low, high, tol=bigfloat.exp2(-30), error_depth=1):
     low = bigfloat.BigFloat(low)
     high = bigfloat.BigFloat(high)
     mid = low + ((high - low) / 2.0)
