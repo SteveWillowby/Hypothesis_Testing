@@ -588,13 +588,13 @@ def find_split_point_of_binomials_ball(binomial_generator, a, b):
     return split_point
 
 def test_uniformity_idea_existence_on_binomials():
-    binomial_10_tosses = (lambda n : (lambda p : alt_binomial_dist(n, p)))(10)
+    binomial_generator = (lambda n : (lambda p : alt_binomial_dist(n, p)))(10)
     zero_mark = bigfloat.BigFloat(0.0)
     half_mark = bigfloat.BigFloat(0.5)
     full_mark = bigfloat.BigFloat(1.0)
 
-    first_half_diam = find_diameter_of_binomials_ball(binomial_10_tosses, zero_mark, half_mark)
-    second_half_diam = find_diameter_of_binomials_ball(binomial_10_tosses, half_mark, full_mark)
+    first_half_diam = find_diameter_of_binomials_ball(binomial_generator, zero_mark, half_mark)
+    second_half_diam = find_diameter_of_binomials_ball(binomial_generator, half_mark, full_mark)
 
     # Num characters
     chars = 12
@@ -603,76 +603,97 @@ def test_uniformity_idea_existence_on_binomials():
         (str(first_half_diam)[:chars], str(second_half_diam)[:chars]))
 
     quarter_mark = \
-        find_split_point_of_binomials_ball(binomial_10_tosses, zero_mark, half_mark)
+        find_split_point_of_binomials_ball(binomial_generator, zero_mark, half_mark)
 
     three_fourths_mark = \
-        find_split_point_of_binomials_ball(binomial_10_tosses, half_mark, full_mark)
+        find_split_point_of_binomials_ball(binomial_generator, half_mark, full_mark)
 
     test_diam_one = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, zero_mark, quarter_mark)
+        find_diameter_of_binomials_ball(binomial_generator, zero_mark, quarter_mark)
 
     test_diam_two = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, quarter_mark, half_mark)
+        find_diameter_of_binomials_ball(binomial_generator, quarter_mark, half_mark)
 
     test_diam_three = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, half_mark, three_fourths_mark)
+        find_diameter_of_binomials_ball(binomial_generator, half_mark, three_fourths_mark)
 
     test_diam_four = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, three_fourths_mark, full_mark)
+        find_diameter_of_binomials_ball(binomial_generator, three_fourths_mark, full_mark)
 
-    print("Quarters:")
+    print("All the Quarters:")
     print("  %s == %s == %s == %s ?" % \
         (str(test_diam_one)[:chars], str(test_diam_two)[:chars], \
          str(test_diam_three)[:chars], str(test_diam_four)[:chars]))
 
     eighth_mark = \
-        find_split_point_of_binomials_ball(binomial_10_tosses, zero_mark, quarter_mark)
+        find_split_point_of_binomials_ball(binomial_generator, zero_mark, quarter_mark)
 
     three_eighths_mark = \
-        find_split_point_of_binomials_ball(binomial_10_tosses, quarter_mark, half_mark)
+        find_split_point_of_binomials_ball(binomial_generator, quarter_mark, half_mark)
 
-    another_quarter_diam = find_diameter_of_binomials_ball(binomial_10_tosses, eighth_mark, three_eighths_mark)
-    print("Another Quarter: %s" % (str(another_quarter_diam)[:chars]))
+    another_quarter_diam = find_diameter_of_binomials_ball(binomial_generator, eighth_mark, three_eighths_mark)
+    print("Another 'Quarter': %s" % (str(another_quarter_diam)[:chars]))
 
     test_diam_one = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, zero_mark, eighth_mark)
+        find_diameter_of_binomials_ball(binomial_generator, zero_mark, eighth_mark)
 
     test_diam_two = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, eighth_mark, quarter_mark)
+        find_diameter_of_binomials_ball(binomial_generator, eighth_mark, quarter_mark)
 
     test_diam_three = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, quarter_mark, three_eighths_mark)
+        find_diameter_of_binomials_ball(binomial_generator, quarter_mark, three_eighths_mark)
 
     test_diam_four = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, three_eighths_mark, half_mark)
+        find_diameter_of_binomials_ball(binomial_generator, three_eighths_mark, half_mark)
 
-    print("Eighths:")
+    print("First Half of the Eighths:")
     print("  %s == %s == %s == %s ?" % \
         (str(test_diam_one)[:chars], str(test_diam_two)[:chars], \
          str(test_diam_three)[:chars], str(test_diam_four)[:chars]))
 
     sixteenth_mark = \
-        find_split_point_of_binomials_ball(binomial_10_tosses, zero_mark, eighth_mark)
+        find_split_point_of_binomials_ball(binomial_generator, zero_mark, eighth_mark)
 
     three_sixteenths_mark = \
-        find_split_point_of_binomials_ball(binomial_10_tosses, eighth_mark, quarter_mark)
+        find_split_point_of_binomials_ball(binomial_generator, eighth_mark, quarter_mark)
+
+    five_sixteenths_mark = \
+        find_split_point_of_binomials_ball(binomial_generator, quarter_mark, three_eighths_mark)
+
+    seven_sixteenths_mark = \
+        find_split_point_of_binomials_ball(binomial_generator, three_eighths_mark, half_mark)
 
     test_diam_one = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, zero_mark, sixteenth_mark)
+        find_diameter_of_binomials_ball(binomial_generator, zero_mark, sixteenth_mark)
 
     test_diam_two = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, sixteenth_mark, eighth_mark)
+        find_diameter_of_binomials_ball(binomial_generator, sixteenth_mark, eighth_mark)
 
     test_diam_three = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, eighth_mark, three_sixteenths_mark)
+        find_diameter_of_binomials_ball(binomial_generator, eighth_mark, three_sixteenths_mark)
 
     test_diam_four = \
-        find_diameter_of_binomials_ball(binomial_10_tosses, three_sixteenths_mark, quarter_mark)
+        find_diameter_of_binomials_ball(binomial_generator, three_sixteenths_mark, quarter_mark)
 
-    print("Sixteenths:")
+    test_diam_five = \
+        find_diameter_of_binomials_ball(binomial_generator, quarter_mark, five_sixteenths_mark)
+
+    test_diam_six = \
+        find_diameter_of_binomials_ball(binomial_generator, five_sixteenths_mark, three_eighths_mark)
+
+    test_diam_seven = \
+        find_diameter_of_binomials_ball(binomial_generator, three_eighths_mark, seven_sixteenths_mark)
+
+    test_diam_eight = \
+        find_diameter_of_binomials_ball(binomial_generator, seven_sixteenths_mark, half_mark)
+
+    print("First Half of the Sixteenths:")
     print("  %s == %s == %s == %s ?" % \
         (str(test_diam_one)[:chars], str(test_diam_two)[:chars], \
          str(test_diam_three)[:chars], str(test_diam_four)[:chars]))
+    print("  %s == %s == %s == %s ?" % \
+        (str(test_diam_five)[:chars], str(test_diam_six)[:chars], \
+         str(test_diam_seven)[:chars], str(test_diam_eight)[:chars]))
 
     print("So... jury is still out?")
 
