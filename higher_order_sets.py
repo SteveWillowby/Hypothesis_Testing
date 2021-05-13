@@ -21,8 +21,8 @@ def jensen_shannon_distance(dist_A, dist_B):
 
     div_A = np.divide(dist_A, mid)
     div_B = np.divide(dist_B, mid)
-    log2_A = np.array([bigfloat.log2(v) for v in div_A])
-    log2_B = np.array([bigfloat.log2(v) for v in div_B])
+    log2_A = np.array([bigfloat.log2(v) if v > bigfloat.BigFloat(0.0) else bigfloat.BigFloat(1.0) for v in div_A])
+    log2_B = np.array([bigfloat.log2(v) if v > bigfloat.BigFloat(0.0) else bigfloat.BigFloat(1.0) for v in div_B])
     KL_A = np.sum(np.multiply(dist_A, log2_A))
     KL_B = np.sum(np.multiply(dist_B, log2_B))
 
@@ -100,9 +100,13 @@ def collapse_dist_to_implied(basic_dists_transposed, dist_over_dists):
     collapsed = np.sum(scale_rows_by_meta_dist, axis=1)
     return collapsed
 
-def alt_binomial_dist(n, p):
-    rev_dist = binomial_dist(n, 1.0 - p)
-    return np.flip(rev_dist)
+__cached_binomial_dists__ = {}
+
+def caching_binomial_dist(n, p):
+    global __cached_binomial_dists__
+    if (n, p) not in __cached_binomial_dists__:
+        __cached_binomial_dists__[(n, p)] = binomial_dist(n, p)
+    return __cached_binomial_dists__[(n, p)]
 
 def binomial_dist(n, p):
     if p == bigfloat.BigFloat(0.0):
@@ -563,6 +567,8 @@ def compare_so_called_derivatives_to_integral():
 
 def __bin_diameter_finder_helper__(p, bg, bin_a, bin_b):
     bin_p = bg(p)
+    return 2.0 * bigfloat.max(jensen_shannon_distance(bin_a, bin_p), \
+                              jensen_shannon_distance(bin_b, bin_p))
     return 2.0 * bigfloat.max(total_variation_distance(bin_a, bin_p), \
                               total_variation_distance(bin_b, bin_p))
 
@@ -587,7 +593,7 @@ def find_split_point_of_binomials_ball(binomial_generator, a, b):
     return split_point
 
 def test_uniformity_idea_existence_on_binomials():
-    binomial_generator = (lambda n : (lambda p : alt_binomial_dist(n, p)))(10)
+    binomial_generator = (lambda n : (lambda p : binomial_dist(n, p)))(10)
     zero_mark = bigfloat.BigFloat(0.0)
     half_mark = bigfloat.BigFloat(0.5)
     full_mark = bigfloat.BigFloat(1.0)
