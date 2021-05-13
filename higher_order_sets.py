@@ -694,6 +694,13 @@ def test_uniformity_idea_existence_on_binomials():
         (str(test_diam_five)[:chars], str(test_diam_six)[:chars], \
          str(test_diam_seven)[:chars], str(test_diam_eight)[:chars]))
 
+    print("")
+    print("For curiosity's sake, here are the splits:")
+    print("%f - %f - %f - %f - %f - %f - %f - %f - %f" % (zero_mark, \
+        sixteenth_mark, eighth_mark, three_sixteenths_mark, quarter_mark, \
+        five_sixteenths_mark, three_eighths_mark, seven_sixteenths_mark, \
+        half_mark))
+
     print("So... jury is still out?")
 
 if __name__ == "__main__":
