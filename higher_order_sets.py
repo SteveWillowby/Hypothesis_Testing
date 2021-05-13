@@ -567,8 +567,8 @@ def compare_so_called_derivatives_to_integral():
 
 def __bin_diameter_finder_helper__(p, bg, bin_a, bin_b):
     bin_p = bg(p)
-    return 2.0 * bigfloat.max(jensen_shannon_distance(bin_a, bin_p), \
-                              jensen_shannon_distance(bin_b, bin_p))
+    return 2.0 * bigfloat.max(hellinger_distance(bin_a, bin_p), \
+                              hellinger_distance(bin_b, bin_p))
     return 2.0 * bigfloat.max(total_variation_distance(bin_a, bin_p), \
                               total_variation_distance(bin_b, bin_p))
 
@@ -593,7 +593,7 @@ def find_split_point_of_binomials_ball(binomial_generator, a, b):
     return split_point
 
 def test_uniformity_idea_existence_on_binomials():
-    binomial_generator = (lambda n : (lambda p : binomial_dist(n, p)))(10)
+    binomial_generator = (lambda n : (lambda p : binomial_dist(n, p)))(7)
     zero_mark = bigfloat.BigFloat(0.0)
     half_mark = bigfloat.BigFloat(0.5)
     full_mark = bigfloat.BigFloat(1.0)
