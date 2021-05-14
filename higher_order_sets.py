@@ -593,7 +593,7 @@ def find_split_point_of_binomials_ball(binomial_generator, a, b):
     return split_point
 
 def test_uniformity_idea_existence_on_binomials():
-    binomial_generator = (lambda n : (lambda p : binomial_dist(n, p)))(7)
+    binomial_generator = (lambda n : (lambda p : binomial_dist(n, p)))(100)
     zero_mark = bigfloat.BigFloat(0.0)
     half_mark = bigfloat.BigFloat(0.5)
     full_mark = bigfloat.BigFloat(1.0)
