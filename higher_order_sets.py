@@ -578,7 +578,7 @@ def find_diameter_of_binomials_ball(binomial_generator, a, b):
 
     func = (lambda args: (lambda p: __bin_diameter_finder_helper__(p, args[0], args[1], args[2])))((binomial_generator, bin_a, bin_b))
     
-    (best_arg, diameter) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-480), error_depth=1)
+    (best_arg, diameter) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-40), error_depth=1)
     return diameter
 
 def __bin_split_point_finder_helper__(p, bg, a, b):
@@ -589,11 +589,11 @@ def find_split_point_of_binomials_ball(binomial_generator, a, b):
 
     func = (lambda args: (lambda p: __bin_split_point_finder_helper__(p, args[0], args[1], args[2])))((binomial_generator, a, b))
 
-    (split_point, best_func) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-480), error_depth=1)
+    (split_point, best_func) = optimizing.binary_min_finder(func, a, b, tol=bigfloat.exp2(-40), error_depth=1)
     return split_point
 
 def test_uniformity_idea_existence_on_binomials():
-    binomial_generator = (lambda n : (lambda p : binomial_dist(n, p)))(10)
+    binomial_generator = (lambda n : (lambda p : binomial_dist(n, p)))(1)
     zero_mark = bigfloat.BigFloat(0.0)
     half_mark = bigfloat.BigFloat(0.5)
     full_mark = bigfloat.BigFloat(1.0)
