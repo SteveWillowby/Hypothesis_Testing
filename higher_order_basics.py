@@ -119,6 +119,8 @@ def binomial_dist(n, p):
     dist = []
     next_prob = bigfloat.pow(1.0 - p, n)  # prob of zero heads
     for h in range(0, n + 1):
+        if next_prob > 1.0:
+            print("Prob too large! %f" % next_prob)
         dist.append(next_prob)
         next_prob = (next_prob * p_ratio * (n - h)) / (h + 1)
     return np.array(dist)
@@ -148,172 +150,99 @@ def plot_log_of_likelihood_ratios(likelihood_ratios, coin_tosses, \
     plt.savefig("coins_%d_of_%d_%s_order.pdf" % (heads, coin_tosses, order))
     plt.close()
 
-def singly_parametrized_dists_and_derivatives(\
-        alt_dist_generator, alt_dist_param_bounds, \
-        num_param_options=1001, \
-        epsilon=bigfloat.exp2(-128)):
-
-    param_min = alt_dist_param_bounds[0]
-    param_max = alt_dist_param_bounds[1]
-
-    param_inc = (param_max - param_min) / (num_param_options - 1)
-
-    distributions = []
-    param_derivative_multiples = []
-    for i in range(0, num_param_options):
-        param = param_min + ((param_max - param_min) * i) / \
-                                (num_param_options - 1)
-        alt_dist = alt_dist_generator(param)
-        distributions.append(alt_dist)
-
-        if param > param_min + (param_max - param_min) / 2:
-            deriv_param = param - epsilon
-        else:
-            deriv_param = param + epsilon
-
-        deriv_dist = alt_dist_generator(deriv_param)
-        param_derivative_multiples.append(\
-            total_variation_distance(alt_dist, deriv_dist) / epsilon)
-
-    param_derivative_multiples = np.array(param_derivative_multiples)
-
-    return (distributions, param_derivative_multiples)
 
 # Returns the distributions in a LIST (list of np-arrays) as well as the
 #   distribution over them in an np-array.
+#
+# params_to_dist should take a single LIST of param values.
 def uniform_dist_over_parametrized_credal_set(\
         param_intervals, params_to_dist, \
         distance_metric=total_variation_distance, \
         num_points_per_param=1001):
     
-    (distributions, uniform_measure_multipls) = \
-        __uniform_dist_over_parametrized_credal_set_helper__(\
-            param_intervals, params_to_dist, \
-            distance_metric, \
-            num_points_per_param)
+    num_params = len(param_intervals)
+    idxs = [0 for _ in range(0, num_params)]
+    param_mins = [param_intervals[i][0] for i in range(0, num_params)]
+    param_maxs = [param_intervals[i][1] for i in range(0, num_params)]
+    param_midpoints = [(param_maxs[i] - param_mins[i]) / 2.0 for \
+                            i in range(0, num_params)]
+    param_increments = [(param_maxs[i] - param_mins[i]) / \
+                            (num_points_per_param - 1) for \
+                                i in range(0, num_params)]
 
-    uniform_measure_multiple = np.array(uniform_measure_multiple)
-    uniform_measure = uniform_measure_multiple / \
-                        np.sum(uniform_measure_multiple)
-
-    return (distributions, uniform_measure)
-
-# Returns the distributions in LIST as well as the un-normalized uniform
-#   measure over the space in a LIST.
-#
-# param_intervals is a list of lists (or list of 2-tuples)
-#
-# params_to_dist must take a LIST of params, even if it only needs one parameter.
-def __uniform_dist_over_parametrized_credal_set_helper__(\
-        param_intervals, params_to_dist, \
-        distance_metric=total_variation_distance, \
-        num_points_per_param=1001):
-
-    this_interval = param_intervals[0]
-    remaining_intervals = param_intervals[1:]
-    epsilon = bigfloat.exp2(-128) * (this_interval[1] - this_interval[0])
-
-    """
-    if len(remaining_intervals) == 0:
-        (dists, prob_multiples) = \
-            singly_parametrized_dists_and_derivatives(\
-                alt_dist_generator=params_to_dist, \
-                alt_dist_param_bounds=this_interval, \
-                num_param_options=num_points_per_param, \
-                epsilon=epsilon)
-
-        return (dists, prob_multiples)
-    """
-
-    FINAL = (len(remaining_intervals) == 0)
-
-    param_min = this_interval[0]
-    param_max = this_interval[1]
-
-    param_inc = (param_max - param_min) / (num_points_per_param - 1)
+    epsilons = [bigfloat.exp2(-128) * (param_maxs[i] - param_mins[i]) / \
+                    num_points_per_param for i in range(0, num_params)]
 
     distributions = []
-    param_derivative_multiples = []
-    for i in range(0, num_points_per_param):
-        param = param_min + ((param_max - param_min) * i) / \
-                                (num_points_per_param - 1)
+    measure = []
 
-        if FINAL:
-            dist = params_to_dist([param])
-            distributions.append(dist)
-        else:
-            generator = (lambda y: (lambda x: params_to_dist([y] + x)))(param)
-            (dists, measure_values) = \
-                __uniform_dist_over_parametrized_credal_set_helper__(\
-                    param_intervals=remaining_intervals, \
-                    params_to_dist=generator, \
-                    distance_metric=distance_metric, \
-                    num_point_per_param=num_points_per_param)
-            distributions += dists
+    done = False
+    while not done:
+        print(idxs)
+        point = [param_mins[i] + idxs[i] * param_increments[i] for \
+                    i in range(0, num_params)]
 
-        if param > param_min + (param_max - param_min) / 2:
-            deriv_param = param - epsilon
-        else:
-            deriv_param = param + epsilon
+        dist = params_to_dist(point)
+        distributions.append(dist)
 
-        if FINAL:
-            deriv_dist = params_to_dist([deriv_param])
-            param_derivative_multiples.append(\
-                distance_metric(dist, deriv_dist) / epsilon)
-        else:
-            # TODO: THIS MIGHT NOT BE THE SAME AS THE PAPER!!!!! UPDATE!!!!!
-            generator = (lambda y: (lambda x: params_to_dist([y] + x)))(deriv_param)
-            (_, deriv_measure_values) = \
-                __uniform_dist_over_parametrized_credal_set_helper__(\
-                    param_intervals=remaining_intervals, \
-                    params_to_dist=generator, \
-                    distance_metric=distance_metric, \
-                    num_point_per_param=num_points_per_param)
-            for i in range(0, len(measure_values)):
-                mv = measure_values[i]
-                dmv = derivative_measure_values[i]
-                param_derivative_multipls.append(\
-                    bigfloat.abs(mv - dmv) / epsilon)
+        full_product = bigfloat.BigFloat(1.0)
+        for i in range(0, num_params):
+            sign = 1.0
+            if point[i] > param_midpoints[i]:
+                sign = -1.0
+            alt_point = list(point)
+            alt_point[i] += sign * epsilons[i]
+            alt_dist = params_to_dist(alt_point)
 
-    param_derivative_multiples = np.array(param_derivative_multiples)
-    return (distributions, param_derivative_multiples)
+            full_product *= distance_metric(dist, alt_dist) / epsilons[i]
 
-def representative_sampling_of_singly_parametrized_dists(\
-        num_samples, alt_dist_generator, alt_dist_param_bounds, \
-        num_param_options=1001):
+        measure.append(full_product)
 
-    (distributions, param_derivative_multiples) = \
-        singly_parametrized_dists_and_derivatives(alt_dist_generator, \
-            alt_dist_param_bounds, num_param_options)
+        increment_idx = num_params - 1
+        idxs[increment_idx] += 1
+        while idxs[increment_idx] == num_points_per_param:
+            idxs[increment_idx] = 0
+            increment_idx -= 1
+            if increment_idx < 0:
+                done = True
+                break
+            idxs[increment_idx] += 1
 
-    param_probabilities = param_derivative_multiples / \
-                            np.sum(param_derivative_multiples)
+    measure = np.array(measure)
+    measure = measure / np.sum(measure)
 
+    return (distributions, measure)
+
+def pdf_to_cdf(pdf):
+    cdf = []
+    cp = bigfloat.BigFloat(0.0)
+    for p in pdf:
+        cp += p
+        cdf.append(cp)
+    cdf[-1] = bigfloat.BigFloat(1.0)
+    return np.array(cdf)
+
+# Runs in O(num_samples * log(num_samples))
+def samples_from_discrete_dist(elements, dist, num_samples):
     global __higher_order_reference_rng__
     if __higher_order_reference_rng__ is None:
         __higher_order_reference_rng__ = np.random.default_rng()
     rng = __higher_order_reference_rng__
 
-    dists_weights = rng.uniform(0.0, num_samples, num_samples)
-    dists_weights = [bigfloat.BigFloat(x) / num_samples for x in dists_weights]
-    dists_weights.sort()
+    sample_weights = rng.uniform(0.0, num_samples, num_samples)
+    sample_weights = [bigfloat.BigFloat(x) / num_samples for x in sample_weights]
+    sample_weights.sort()
 
-    sampled_dists = []
+    cdf = pdf_to_cdf(dist)
 
-    cumulative_param_probs = []
-    cp = bigfloat.BigFloat(0.0)
-    for p in param_probabilities:
-        cp += p
-        cumulative_param_probs.append(cp)
-    cumulative_param_probs[-1] = bigfloat.BigFloat(1.0)
-
-    dw_idx = 0
-    param_idx = 0
-    while dw_idx < num_samples:
-        if dists_weights[dw_idx] < cumulative_param_probs[param_idx]:
-            sampled_dists.append(distributions[param_idx])
-            dw_idx += 1
+    samples = []
+    sw_idx = 0
+    element_idx = 0
+    while sw_idx < num_samples:
+        if sample_weights[sw_idx] < cdf[element_idx]:
+            samples.append(elements[element_idx])
+            sw_idx += 1
         else:
-            param_idx += 1
+            element_idx += 1
 
-    return sampled_dists
+    return samples

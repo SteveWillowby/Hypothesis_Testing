@@ -13,7 +13,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         num_dists_by_order=[10000, 5000, 2500, 1250], \
         order_names=["First", "Second", "Third", "Fourth"]):
 
-    binomial = (lambda n : (lambda p : binomial_dist(n, p)))(coin_tosses)
+    binomial = (lambda n : (lambda p_list : binomial_dist(n, p_list[0])))(coin_tosses)
 
     print("Creating Null Dist")
     null_dist = binomial_dist(coin_tosses, null_p)
@@ -22,18 +22,31 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     # If ensure_null_present is true, then the sample is biased and not QUITE
     #   representative.
     ensure_null_present = False
+
+    print("Building Uniform Dist over First Order Dists")
+    (first_order_credal_set_sample_space, uniform_measure) = \
+        uniform_dist_over_parametrized_credal_set(\
+            param_intervals=[[bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)]],\
+            params_to_dist=binomial, \
+            distance_metric=total_variation_distance, \
+            num_points_per_param=(num_dists_by_order[0] / 5 + 1))
+    print("  Done Building Uniform Dist over First Order Dists")
+
+    space_size = len(uniform_measure)
+    plt.plot([bigfloat.BigFloat(1.0) / (space_size - 1) * i \
+                for i in range(0, space_size)], uniform_measure)
+    plt.show()
+    plt.close()
+
     done = False
     while not done:
-        print("Creating Representative First Order Dist Sample")
-        first_order_dists = \
-            representative_sampling_of_singly_parametrized_dists(
-                num_samples=num_dists_by_order[0], \
-                alt_dist_generator=binomial, \
-                alt_dist_param_bounds = [bigfloat.exp2(-20), \
-                                         1.0 - bigfloat.exp2(-20)], \
-                num_param_options=(num_dists_by_order[0] * 10 + 1))
+        print("Creating Representative First Order Sample via Uniform Measure")
 
-        print("  Sample Complete")
+        first_order_dists = samples_from_discrete_dist(\
+            elements=first_order_credal_set_sample_space, \
+            dist=uniform_measure, \
+            num_samples=num_dists_by_order[0])
+
         if ensure_null_present:
             for dist in first_order_dists:
                 if dist.all() == null_dist.all():
@@ -43,41 +56,34 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 print("Issue! Didn't get null dist in 1st order dists - retrying.")
         else:
             done = True
+    print("  Sample Complete")
 
-    print("Generating Uniform Second Order Dist")
+    print([float(d[0]) for d in first_order_dists])
+    plt.plot([i for i in range(0, coin_tosses + 1)], first_order_dists[int(len(first_order_dists) / 2)])
+    plt.plot([i for i in range(0, coin_tosses + 1)], first_order_dists[int(len(first_order_dists) / 4)])
+    plt.plot([i for i in range(0, coin_tosses + 1)], first_order_dists[int(len(first_order_dists) / 8)])
+    plt.show()
+    plt.close()
+
+    print("Generating Uniform Dist over First Order Representative Sample")
     uniform_second_order_dist = first_order_dists[0]
+    alt_second_order = [bigfloat.BigFloat(0.0) for i in range(0, coin_tosses + 1)]
     for i in range(1, len(first_order_dists)):
         uniform_second_order_dist += first_order_dists[i]
-    uniform_second_order_dist /= len(first_order_dists)
-    print("  Generating Uniform Second Order Dist Complete")
+        for j in range(0, coin_tosses + 1):
+            alt_second_order[j] += bigfloat.min(first_order_dists[i][j], 1.0)
+    alt_second_order = np.array(alt_second_order)
+    alt_second_order /= np.sum(alt_second_order)
+    uniform_second_order_dist /= np.sum(uniform_second_order_dist)
+    print("  Generating Uniform Dist Complete")
 
     print("Plotting Uniform Second Order Dist")
-    plt.plot([i for i in range(0, coin_tosses + 1)], uniform_second_order_dist)
+    plt.plot([i for i in range(0, coin_tosses + 1)], alt_second_order)
     plt.title("Dist Over Num Heads Implied by Uniform Second Order Dist")
     plt.savefig("second_order_uniform_over_heads.pdf")
+    plt.show()
     plt.close()
     print("  Plotting of Uniform Second Order Dist Complete")
-
-    """
-    print("Combining Dists")
-    full_dist_collection = []
-    prior = bigfloat.exp2(-10.0)
-    prior_inc = (1.0 - (2.0 * prior)) / (num_priors - 1)
-    for prior_idx in range(0, num_priors):
-        for alternate_dist in alternate_dists:
-            # Make a JOINT probability space with N and not-N as events
-            full_dist_collection.append(np.concatenate((prior * null_dist, \
-                                            (1.0 - prior) * alternate_dist)))
-        prior += prior_inc
-    full_dist_collection = np.array(full_dist_collection)
-    print("  Combining Dists Complete")
-
-    # Now P(flip c heads) = dist[c] + dist[coin_tosses + c]
-    # P(flip c heads | N) = dist[c]
-    # P(flip c heads | not-N) = dist[coin_tosses + c]
-    # P(N) = sum( dist[0...coin_tosses) )
-    # P(not-N) = sum( dist[coin_tosses...end) )
-    """
 
     print("Getting Chances of %d Heads from %d Tosses" % (heads, coin_tosses))
     first_order_chances = [dist[heads] for dist in first_order_dists]
@@ -123,6 +129,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Just Indexing Prob Functions...")
     plt.ylabel("Chance of %d Heads on %d Tosses" % (heads, coin_tosses))
     plt.savefig("higher_order_convergence.pdf")
+    plt.show()
     plt.close()
 
     print("  Plotting Ordered Chances Complete")
@@ -300,7 +307,7 @@ def compare_L1_and_L2_dist_generation():
 # Conclusion: TV(Ci(x), Ci(y)) =/= integral_{x to y} (lim e -> 0 TV(Ci(p), Ci(p + e)) / e) dp
 def compare_so_called_derivatives_to_integral():
 
-    binomial_10_tosses = (lambda n : (lambda p : binomial_dist(n, p)))(10)
+    binomial_10_tosses = (lambda n : (lambda p : binomial_dist(n, p[0])))(10)
 
     num_binomials = 201
     print("Generating %d Binomials and 'Derivatives'..." % num_binomials)
@@ -498,8 +505,14 @@ def test_uniformity_idea_existence_on_binomials():
     print("So... jury is still out?")
 
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=20000, emax=10000, emin=-10000)
+    bf_context = bigfloat.Context(precision=2000, emax=10000, emin=-10000)
     bigfloat.setcontext(bf_context)
+
+    test_for_higher_order_convergence_with_binomials(null_p=0.5, \
+        coin_tosses=50, heads=20, \
+        num_dists_by_order=[1000, 500, 250, 125], \
+        order_names=["First", "Second", "Third", "Fourth"])
+    exit(0)
 
     test_uniformity_idea_existence_on_binomials()
     exit(0)
