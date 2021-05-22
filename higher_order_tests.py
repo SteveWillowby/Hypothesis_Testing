@@ -36,7 +36,8 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.plot([bigfloat.BigFloat(1.0) / (space_size - 1) * i \
                 for i in range(0, space_size)], uniform_measure)
     plt.title("Uniform Over PARAMETER")
-    plt.show()
+    plt.savefig("uniform_over_parameter.pdf")
+    # plt.show()
     plt.close()
 
     done = False
@@ -76,7 +77,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.plot([i for i in range(0, coin_tosses + 1)], uniform_second_order_dist)
     plt.title("Dist Over Num Heads Implied by Uniform Second Order Dist")
     plt.savefig("second_order_uniform_over_heads.pdf")
-    plt.show()
+    # plt.show()
     plt.close()
     print("  Plotting of Uniform Second Order Dist Complete")
 
@@ -124,7 +125,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Just Indexing Prob Functions...")
     plt.ylabel("Chance of %d Heads on %d Tosses" % (heads, coin_tosses))
     plt.savefig("higher_order_convergence.pdf")
-    plt.show()
+    # plt.show()
     plt.close()
 
     print("  Plotting Ordered Chances Complete")
@@ -500,7 +501,7 @@ def test_uniformity_idea_existence_on_binomials():
     print("So... jury is still out?")
 
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=20000, emax=100000000, emin=-100000000)
+    bf_context = bigfloat.Context(precision=2000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
