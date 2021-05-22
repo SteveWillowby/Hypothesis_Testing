@@ -118,10 +118,11 @@ def binomial_dist(n, p):
     p_ratio = p / (1.0 - p)
     dist = []
     next_prob = bigfloat.pow(1.0 - p, n)  # prob of zero heads
+    if next_prob == bigfloat.BigFloat(0.0):
+        print("Note: Not enough precision to distinguish between ratio %s and ratio 1 in creating binomial dist." % p)
+        return binomial_dist(n, bigfloat.BigFloat(1.0))
     for h in range(0, n + 1):
-        if next_prob > 1.0:
-            print("Prob too large! %f" % next_prob)
-        dist.append(next_prob)
+        dist.append(bigfloat.abs(next_prob))
         next_prob = (next_prob * p_ratio * (n - h)) / (h + 1)
     return np.array(dist)
 
@@ -178,7 +179,7 @@ def uniform_dist_over_parametrized_credal_set(\
 
     done = False
     while not done:
-        print(idxs)
+        # print(idxs)
         point = [param_mins[i] + idxs[i] * param_increments[i] for \
                     i in range(0, num_params)]
 

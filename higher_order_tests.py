@@ -35,6 +35,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     space_size = len(uniform_measure)
     plt.plot([bigfloat.BigFloat(1.0) / (space_size - 1) * i \
                 for i in range(0, space_size)], uniform_measure)
+    plt.title("Uniform Over PARAMETER")
     plt.show()
     plt.close()
 
@@ -58,12 +59,6 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
             done = True
     print("  Sample Complete")
 
-    print([float(d[0]) for d in first_order_dists])
-    plt.plot([i for i in range(0, coin_tosses + 1)], first_order_dists[int(len(first_order_dists) / 2)])
-    plt.plot([i for i in range(0, coin_tosses + 1)], first_order_dists[int(len(first_order_dists) / 4)])
-    plt.plot([i for i in range(0, coin_tosses + 1)], first_order_dists[int(len(first_order_dists) / 8)])
-    plt.show()
-    plt.close()
 
     print("Generating Uniform Dist over First Order Representative Sample")
     uniform_second_order_dist = first_order_dists[0]
@@ -78,7 +73,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     print("  Generating Uniform Dist Complete")
 
     print("Plotting Uniform Second Order Dist")
-    plt.plot([i for i in range(0, coin_tosses + 1)], alt_second_order)
+    plt.plot([i for i in range(0, coin_tosses + 1)], uniform_second_order_dist)
     plt.title("Dist Over Num Heads Implied by Uniform Second Order Dist")
     plt.savefig("second_order_uniform_over_heads.pdf")
     plt.show()
@@ -505,12 +500,12 @@ def test_uniformity_idea_existence_on_binomials():
     print("So... jury is still out?")
 
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=2000, emax=10000, emin=-10000)
+    bf_context = bigfloat.Context(precision=20000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=20, \
-        num_dists_by_order=[1000, 500, 250, 125], \
+        num_dists_by_order=[10000, 5000, 2500, 1250], \
         order_names=["First", "Second", "Third", "Fourth"])
     exit(0)
 
