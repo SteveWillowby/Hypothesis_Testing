@@ -37,7 +37,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 for i in range(0, space_size)], uniform_measure)
     plt.title("Uniform Over PARAMETER")
     plt.savefig("uniform_over_parameter.pdf")
-    # plt.show()
+    plt.show()
     plt.close()
 
     done = False
@@ -60,16 +60,10 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
             done = True
     print("  Sample Complete")
 
-
     print("Generating Uniform Dist over First Order Representative Sample")
-    uniform_second_order_dist = first_order_dists[0]
-    alt_second_order = [bigfloat.BigFloat(0.0) for i in range(0, coin_tosses + 1)]
+    uniform_second_order_dist = np.array(first_order_dists[0])
     for i in range(1, len(first_order_dists)):
         uniform_second_order_dist += first_order_dists[i]
-        for j in range(0, coin_tosses + 1):
-            alt_second_order[j] += bigfloat.min(first_order_dists[i][j], 1.0)
-    alt_second_order = np.array(alt_second_order)
-    alt_second_order /= np.sum(alt_second_order)
     uniform_second_order_dist /= np.sum(uniform_second_order_dist)
     print("  Generating Uniform Dist Complete")
 
@@ -77,7 +71,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.plot([i for i in range(0, coin_tosses + 1)], uniform_second_order_dist)
     plt.title("Dist Over Num Heads Implied by Uniform Second Order Dist")
     plt.savefig("second_order_uniform_over_heads.pdf")
-    # plt.show()
+    plt.show()
     plt.close()
     print("  Plotting of Uniform Second Order Dist Complete")
 
@@ -125,7 +119,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Just Indexing Prob Functions...")
     plt.ylabel("Chance of %d Heads on %d Tosses" % (heads, coin_tosses))
     plt.savefig("higher_order_convergence.pdf")
-    # plt.show()
+    plt.show()
     plt.close()
 
     print("  Plotting Ordered Chances Complete")
@@ -506,7 +500,7 @@ if __name__ == "__main__":
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=20, \
-        num_dists_by_order=[10000, 5000, 2500, 1250], \
+        num_dists_by_order=[1000, 500, 250, 125], \
         order_names=["First", "Second", "Third", "Fourth"])
     exit(0)
 
