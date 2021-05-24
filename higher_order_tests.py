@@ -495,12 +495,12 @@ def test_uniformity_idea_existence_on_binomials():
     print("So... jury is still out?")
 
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=2000, emax=100000000, emin=-100000000)
+    bf_context = bigfloat.Context(precision=20000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=20, \
-        num_dists_by_order=[1000, 500, 250, 125], \
+        num_dists_by_order=[10000, 5000, 2500, 1250], \
         order_names=["First", "Second", "Third", "Fourth"])
     exit(0)
 
