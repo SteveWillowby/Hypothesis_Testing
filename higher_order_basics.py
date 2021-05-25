@@ -34,6 +34,10 @@ def naive_overlap_distance(dist_A, dist_B):
     return 1.0 - np.sum(np.minimum(dist_A, dist_B))
 
 def hellinger_distance(dist_A, dist_B):
+    return L2_distance(np.array([bigfloat.sqrt(v) for v in dist_A]), \
+                       np.array([bigfloat.sqrt(v) for v in dist_B])) / \
+                bigfloat.sqrt(2)
+
     BC = np.sum([bigfloat.sqrt(v) for v in np.multiply(dist_A, dist_B)])
     return bigfloat.sqrt(1.0 - BC)
 
@@ -92,8 +96,12 @@ def random_Hellinger_dist_over_n_elements(n):
 
 # Rather than returning the full new dist, returns the implied dist over the
 # lower-level sample space.
-def generate_random_dist_over_dists(basic_dists_transposed):
-    dist_over_dists = random_L1_dist_over_n_elements(len(basic_dists_transposed[0]))
+def generate_random_dist_over_dists(basic_dists_transposed, metric="TV"):
+    if metric == "TV":
+        dist_over_dists = random_L1_dist_over_n_elements(len(basic_dists_transposed[0]))
+    else:
+        assert metric == "H"
+        dist_over_dists = random_Hellinger_dist_over_n_elements(len(basic_dists_transposed[0]))
 
     scale_rows_by_meta_dist = basic_dists_transposed * dist_over_dists
     collapsed = np.sum(scale_rows_by_meta_dist, axis=1)
@@ -194,7 +202,6 @@ def uniform_dist_over_parametrized_credal_set(\
 
     done = False
     while not done:
-        # print(idxs)
         point = [param_mins[i] + idxs[i] * param_increments[i] for \
                     i in range(0, num_params)]
 

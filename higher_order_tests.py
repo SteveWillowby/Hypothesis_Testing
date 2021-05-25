@@ -7,11 +7,17 @@ import bigfloat
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-
+# Can pass "TV" or "H" for metric
 def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=20, \
         num_dists_by_order=[10000, 5000, 2500, 1250], \
-        order_names=["First", "Second", "Third", "Fourth"]):
+        order_names=["First", "Second", "Third", "Fourth"], \
+        metric="TV"):
+
+    if metric == "TV":
+        dm = total_variation_distance
+    elif metric == "H":
+        dm = hellinger_distance
 
     binomial = (lambda n : (lambda p_list : binomial_dist(n, p_list[0])))(coin_tosses)
 
@@ -28,7 +34,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         uniform_dist_over_parametrized_credal_set(\
             param_intervals=[[bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)]],\
             params_to_dist=binomial, \
-            distance_metric=total_variation_distance, \
+            distance_metric=dm, \
             num_points_per_param=(num_dists_by_order[0] / 5 + 1))
     print("  Done Building Uniform Dist over First Order Dists")
 
@@ -90,7 +96,9 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         new_dists = []
         print("Working on %s Order Prob Functions" % order_name)
         for i in range(0, num_dists):
-            new_dists.append(generate_random_dist_over_dists(old_dists_transposed))
+            new_dists.append(generate_random_dist_over_dists(\
+                                old_dists_transposed, \
+                                metric))
         new_dists = np.array(new_dists)
         print("  Accumulated %s Order Prob Functions" % order_name)
 
@@ -252,14 +260,16 @@ def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
 # intervals [[0, 1], [0, 1]]
 def simple_parametrization_for_3_dims(params):
     height = params[0]
-    point_one = np.array([1.0 - height, bigfloat.BigFloat(0.1), height])
+    point_one = np.array([1.0 - height, bigfloat.BigFloat(0.0), height])
     point_two = np.array([bigfloat.BigFloat(0.0), 1.0 - height, height])
     return params[1] * point_two + (1.0 - params[1]) * point_one
 
-# intervals[[0, bigfloat.pi() / 2], [0, 1]]
+# intervals[[0, bigfloat.const_pi() / 2], [0, 1]]
 def radial_parametrization_for_3_dims(params):
     angle = params[0]
+    assert angle <= bigfloat.const_pi() / 2.0
     percent_radius = params[1]
+    assert percent_radius <= 1.0
 
     p1 = bigfloat.cos(angle)
     p2 = bigfloat.sin(angle)
@@ -271,32 +281,41 @@ def radial_parametrization_for_3_dims(params):
     top = np.array([bigfloat.BigFloat(0.0), bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)])
     return percent_radius * bottom + (1.0 - percent_radius) * top
 
-def compare_various_hellinger_uniforms():
+def compare_various_uniforms(metric="TV"):
     print("First Method...")
-    method_1 = [random_Hellinger_dist_over_n_elements(3) for i in range(0, 500)]
-    print([[float(v) for v in x] for x in method_1])
+    if metric == "TV":
+        method_1 = [random_L1_dist_over_n_elements(3) for i in range(0, 10000)]
+        dm = total_variation_distance
+    elif metric == "L2":
+        method_1 = [random_L2_dist_over_n_elements(3) for i in range(0, 10000)]
+        dm = L2_distance
+    else:
+        assert metric == "H"
+        method_1 = [random_Hellinger_dist_over_n_elements(3) for i in range(0, 10000)]
+        dm = hellinger_distance
+    # print([[float(v) for v in x] for x in method_1])
 
     print("Second Method...")
     (points, dist) = uniform_dist_over_parametrized_credal_set(\
         param_intervals=[[bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)], \
                          [bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)]], \
         params_to_dist=simple_parametrization_for_3_dims, \
-        distance_metric=hellinger_distance, \
-        num_points_per_param=21)
-    method_2 = samples_from_discrete_dist(points, dist, 500)
-    print([float(v) for v in dist])
-    print([[float(v) for v in x] for x in method_2])
+        distance_metric=dm, \
+        num_points_per_param=401)
+    method_2 = samples_from_discrete_dist(points, dist, 10000)
+    # print([float(v) for v in dist])
+    # print([[float(v) for v in x] for x in method_2])
 
     print("Third Method...")
     (points, dist) = uniform_dist_over_parametrized_credal_set(\
         param_intervals=[[bigfloat.BigFloat(0.0), bigfloat.const_pi() / 2.0], \
                          [bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)]], \
-        params_to_dist=simple_parametrization_for_3_dims, \
-        distance_metric=hellinger_distance, \
-        num_points_per_param=21)
-    method_3 = samples_from_discrete_dist(points, dist, 500)
-    print([float(v) for v in dist])
-    print([[float(v) for v in x] for x in method_3])
+        params_to_dist=radial_parametrization_for_3_dims, \
+        distance_metric=dm, \
+        num_points_per_param=401)
+    method_3 = samples_from_discrete_dist(points, dist, 10000)
+    # print([float(v) for v in dist])
+    # print([[float(v) for v in x] for x in method_3])
 
     fig = plt.figure()
     # The 111 is necessary for some weird reason
@@ -304,9 +323,14 @@ def compare_various_hellinger_uniforms():
     ax.set_xlim(0, 1)
     ax.set_ylim(1, 0)
     ax.scatter([np.float64(x[0]) for x in method_1], [np.float64(x[1]) for x in method_1], [np.float64(x[2]) for x in method_1], marker='o', alpha=0.02)
-    plt.title("Calafiore's L2-sphere --> Hellinger")
+    if metric == "H":
+        plt.title("Calafiore's L2-sphere --> Hellinger")
+    elif metric == "TV":
+        plt.title("L1 (TV) Uniform")
+    elif metric == "L2":
+        plt.title("L2 Uniform")
     # plt.show()
-    plt.savefig('Hellinger_Uniform_Method_1.png')
+    plt.savefig('%s_Uniform_Method_1.png' % metric)
     plt.close()
 
     fig = plt.figure()
@@ -316,7 +340,7 @@ def compare_various_hellinger_uniforms():
     ax.scatter([np.float64(x[0]) for x in method_2], [np.float64(x[1]) for x in method_2], [np.float64(x[2]) for x in method_2], marker='o', alpha=0.02)
     plt.title("Simple Parametrization")
     # plt.show()
-    plt.savefig('Hellinger_Uniform_Method_2.png')
+    plt.savefig('%s_Uniform_Method_2.png' % metric)
     plt.close()
 
     fig = plt.figure()
@@ -326,7 +350,7 @@ def compare_various_hellinger_uniforms():
     ax.scatter([np.float64(x[0]) for x in method_3], [np.float64(x[1]) for x in method_3], [np.float64(x[2]) for x in method_3], marker='o', alpha=0.02)
     plt.title("Simple Parametrization")
     # plt.show()
-    plt.savefig('Hellinger_Uniform_Method_3.png')
+    plt.savefig('%s_Uniform_Method_3.png' % metric)
     plt.close()
 
 def compare_uniform_generation():
@@ -560,16 +584,17 @@ def test_uniformity_idea_existence_on_binomials():
     print("So... jury is still out?")
 
 if __name__ == "__main__":
-    bf_context = bigfloat.Context(precision=20000, emax=100000000, emin=-100000000)
+    bf_context = bigfloat.Context(precision=2000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
-    compare_various_hellinger_uniforms()
+    compare_various_uniforms(metric="TV")
     exit(0)
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=20, \
         num_dists_by_order=[10000, 5000, 2500, 1250], \
-        order_names=["First", "Second", "Third", "Fourth"])
+        order_names=["First", "Second", "Third", "Fourth"], \
+        metric="H")
     exit(0)
 
     test_uniformity_idea_existence_on_binomials()
