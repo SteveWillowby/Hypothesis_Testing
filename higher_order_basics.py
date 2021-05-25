@@ -75,6 +75,21 @@ def random_L1_dist_over_n_elements(n):
     raw_coords = np.array([bigfloat.BigFloat(x) for x in raw_coords])
     return raw_coords / np.sum(raw_coords)
 
+def random_Hellinger_dist_over_n_elements(n):
+    global __higher_order_reference_rng__
+    if __higher_order_reference_rng__ is None:
+        __higher_order_reference_rng__ = np.random.default_rng()
+    rng = __higher_order_reference_rng__
+
+    # Randomly L2-generate a point on the L2 SPHERE, then square the components.
+
+    raw_coords = rng.gamma(0.5, 1.0, n)
+    raw_coords = np.array([bigfloat.sqrt(x) for x in raw_coords])
+    L2_norm = bigfloat.sqrt(np.sum(np.square(raw_coords)))
+    scaled_coords = raw_coords / L2_norm
+    distribution = np.square(scaled_coords)
+    return distribution
+
 # Rather than returning the full new dist, returns the implied dist over the
 # lower-level sample space.
 def generate_random_dist_over_dists(basic_dists_transposed):

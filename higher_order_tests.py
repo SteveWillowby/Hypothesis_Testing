@@ -155,32 +155,6 @@ def test_for_a_natural_distance_metric():
     h_distances = [[hellinger_distance(d, ref_dist) for d in binomial_dists] for ref_dist in reference_dists]
     tv_distances = [[total_variation_distance_for_binomials(d, ref_dist) for d in binomial_dists] for ref_dist in reference_dists]
 
-    """
-    plt.plot(priors, js_distances[0])
-    plt.plot(priors, js_distances[1])
-    plt.plot(priors, js_distances[2])
-    plt.title("Jensen Shannon Distances of Distributions")
-    plt.xlabel("Proportion Parameter")
-    plt.ylabel("Distance from a Reference Distribution")
-    plt.show()
-
-    plt.plot(priors, no_distances[0])
-    plt.plot(priors, no_distances[1])
-    plt.plot(priors, no_distances[2])
-    plt.title("Naive Overlap Distances of Distributions")
-    plt.xlabel("Proportion Parameter")
-    plt.ylabel("Distance from a Reference Distribution")
-    plt.show()
-
-    plt.plot(priors, h_distances[0])
-    plt.plot(priors, h_distances[1])
-    plt.plot(priors, h_distances[2])
-    plt.title("Hellinger Distances of Distributions")
-    plt.xlabel("Proportion Parameter")
-    plt.ylabel("Distance from a Reference Distribution")
-    plt.show()
-    """
-
     plt.plot([i for i in range(0, num_tosses + 1)], reference_dists[0])
     plt.title("Reference Dists")
     plt.xlabel("Number of Heads")
@@ -275,9 +249,90 @@ def test_distance_metrics_for_linearity_of_immediate_space_on_binomials():
         plt.ylabel("see title")
         plt.show()
 
-def compare_L1_and_L2_dist_generation():
+# intervals [[0, 1], [0, 1]]
+def simple_parametrization_for_3_dims(params):
+    height = params[0]
+    point_one = np.array([1.0 - height, bigfloat.BigFloat(0.1), height])
+    point_two = np.array([bigfloat.BigFloat(0.0), 1.0 - height, height])
+    return params[1] * point_two + (1.0 - params[1]) * point_one
+
+# intervals[[0, bigfloat.pi() / 2], [0, 1]]
+def radial_parametrization_for_3_dims(params):
+    angle = params[0]
+    percent_radius = params[1]
+
+    p1 = bigfloat.cos(angle)
+    p2 = bigfloat.sin(angle)
+    p1_scaled = p1 / (p1 + p2)
+    p2_scaled = p2 / (p1 + p2)
+    assert float(p1_scaled + p2_scaled) == 1.0
+
+    bottom = np.array([p1_scaled, p2_scaled, bigfloat.BigFloat(0.0)])
+    top = np.array([bigfloat.BigFloat(0.0), bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)])
+    return percent_radius * bottom + (1.0 - percent_radius) * top
+
+def compare_various_hellinger_uniforms():
+    print("First Method...")
+    method_1 = [random_Hellinger_dist_over_n_elements(3) for i in range(0, 500)]
+    print([[float(v) for v in x] for x in method_1])
+
+    print("Second Method...")
+    (points, dist) = uniform_dist_over_parametrized_credal_set(\
+        param_intervals=[[bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)], \
+                         [bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)]], \
+        params_to_dist=simple_parametrization_for_3_dims, \
+        distance_metric=hellinger_distance, \
+        num_points_per_param=21)
+    method_2 = samples_from_discrete_dist(points, dist, 500)
+    print([float(v) for v in dist])
+    print([[float(v) for v in x] for x in method_2])
+
+    print("Third Method...")
+    (points, dist) = uniform_dist_over_parametrized_credal_set(\
+        param_intervals=[[bigfloat.BigFloat(0.0), bigfloat.const_pi() / 2.0], \
+                         [bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)]], \
+        params_to_dist=simple_parametrization_for_3_dims, \
+        distance_metric=hellinger_distance, \
+        num_points_per_param=21)
+    method_3 = samples_from_discrete_dist(points, dist, 500)
+    print([float(v) for v in dist])
+    print([[float(v) for v in x] for x in method_3])
+
+    fig = plt.figure()
+    # The 111 is necessary for some weird reason
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(1, 0)
+    ax.scatter([np.float64(x[0]) for x in method_1], [np.float64(x[1]) for x in method_1], [np.float64(x[2]) for x in method_1], marker='o', alpha=0.02)
+    plt.title("Calafiore's L2-sphere --> Hellinger")
+    # plt.show()
+    plt.savefig('Hellinger_Uniform_Method_1.png')
+    plt.close()
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(1, 0)
+    ax.scatter([np.float64(x[0]) for x in method_2], [np.float64(x[1]) for x in method_2], [np.float64(x[2]) for x in method_2], marker='o', alpha=0.02)
+    plt.title("Simple Parametrization")
+    # plt.show()
+    plt.savefig('Hellinger_Uniform_Method_2.png')
+    plt.close()
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(1, 0)
+    ax.scatter([np.float64(x[0]) for x in method_3], [np.float64(x[1]) for x in method_3], [np.float64(x[2]) for x in method_3], marker='o', alpha=0.02)
+    plt.title("Simple Parametrization")
+    # plt.show()
+    plt.savefig('Hellinger_Uniform_Method_3.png')
+    plt.close()
+
+def compare_uniform_generation():
     L1_points = [random_L1_dist_over_n_elements(3) for i in range(0, 5000)]
     L2_points = [random_L2_dist_over_n_elements(3) for i in range(0, 5000)]
+    H_points = [random_Hellinger_dist_over_n_elements(3) for i in range(0, 5000)]
 
     fig = plt.figure()
     # The 111 is necessary for some weird reason
@@ -285,6 +340,7 @@ def compare_L1_and_L2_dist_generation():
     ax.set_xlim(0, 1)
     ax.set_ylim(1, 0)
     ax.scatter([np.float64(x[0]) for x in L1_points], [np.float64(x[1]) for x in L1_points], [np.float64(x[2]) for x in L1_points], marker='o', alpha=0.02)
+    plt.title("L1 Uniform")
     plt.show()
     plt.close()
     fig = plt.figure()
@@ -292,6 +348,15 @@ def compare_L1_and_L2_dist_generation():
     ax.set_xlim(0, 1)
     ax.set_ylim(1, 0)
     ax.scatter([np.float64(x[0]) for x in L2_points], [np.float64(x[1]) for x in L2_points], [np.float64(x[2]) for x in L2_points], marker='o', alpha=0.02)
+    plt.title("L2 Uniform")
+    plt.show()
+    plt.close()
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(1, 0)
+    ax.scatter([np.float64(x[0]) for x in H_points], [np.float64(x[1]) for x in H_points], [np.float64(x[2]) for x in H_points], marker='o', alpha=0.02)
+    plt.title("Hellinger Uniform???? Maybe???")
     plt.show()
 
 # Conclusion: TV(Ci(x), Ci(y)) =/= integral_{x to y} (lim e -> 0 TV(Ci(p), Ci(p + e)) / e) dp
@@ -497,6 +562,9 @@ def test_uniformity_idea_existence_on_binomials():
 if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=20000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
+
+    compare_various_hellinger_uniforms()
+    exit(0)
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=20, \
