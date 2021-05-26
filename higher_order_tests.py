@@ -57,6 +57,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.title("%s-Uniform PDF Over Proportion p for n = 100" % metric, fontsize=title_fontsize)
     plt.xlabel("Proportion p", fontsize=axis_fontsize)
     plt.ylabel("Probability Density", fontsize=axis_fontsize)
+    plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
     plt.savefig("figures/%s_uniform_over_parameter.pdf" % metric)
     # plt.show()
     plt.close()
@@ -93,6 +94,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.title("Distribution Implied by 2nd Order %s-Uniform" % metric, fontsize=title_fontsize)
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
+    plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
     plt.savefig("figures/%s_sampled_second_order_uniform_over_heads.pdf" % metric)
     # plt.show()
     plt.close()
@@ -101,6 +103,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.title("Distribution Implied by 2nd Order %s-Uniform" % metric, fontsize=title_fontsize)
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
+    plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
     plt.savefig("figures/%s_second_order_uniform_over_heads.pdf" % metric)
     # plt.show()
     plt.close()
@@ -161,7 +164,10 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
 
             plt.ylim((plot_min, plot_max))
 
-            suptitle = "Representative Chances of %d Heads on %d Tosses" % \
+            title = "Higher Order Convergence for Event: [%d Heads on %d Tosses]" % \
+                (heads_num, coin_tosses)
+            """
+            suptitle = "Chances of Event: [%d Heads on %d Tosses]" % \
                 (heads_num, coin_tosses)
             title = "For"
             for i in range(start_order, len(order_names) - 1):
@@ -170,14 +176,16 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 title += " and %s Order Confidences" % order_names[-1]
             else:
                 title += " %s Order Confidences" % order_names[-1]
+            """
             if start_order == 0:
-                plt.suptitle(suptitle, fontsize=title_fontsize)
+                # plt.suptitle(suptitle, fontsize=title_fontsize)
                 plt.title(title, fontsize=title_fontsize)
             if start_order == 2:
-                plt.xlabel("Just an Indexing of Prob Functions", fontsize=axis_fontsize)
+                plt.xlabel("Probability Functions", fontsize=axis_fontsize)
             if heads_idx == 0:
-                plt.ylabel("Chance of %d Heads on %d Tosses" % (heads_num, coin_tosses), fontsize=axis_fontsize)
+                plt.ylabel("Chance of Event", fontsize=axis_fontsize)
             plt.legend(fontsize=legend_fontsize)
+            plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
             plt.savefig("figures/%s_higher_order_convergence_%d_%d_%d.pdf" % (metric, heads_num, coin_tosses, start_order + 1))
             # plt.show()
             plt.close()
