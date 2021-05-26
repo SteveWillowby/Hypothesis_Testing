@@ -56,7 +56,7 @@ def total_variation_distance(dist_A, dist_B):
 # Only instantiate an RNG once.
 __higher_order_reference_rng__ = None
 
-def random_L2_dist_over_n_elements(n):
+def random_L2_dist_over_n_elements(n, use_128_bits=False):
     # Use uniform between 0 and n rather than 0 and 1 to HOPEFULLY allow more
     # precision.
     global __higher_order_reference_rng__
@@ -64,22 +64,27 @@ def random_L2_dist_over_n_elements(n):
         __higher_order_reference_rng__ = np.random.default_rng()
     rng = __higher_order_reference_rng__
 
-    basic_numbers = [np.float64(0.0)] + \
-        [rng.uniform(0.0, n) for i in range(0, n - 1)] + [np.float64(n)]
+    basic_numbers = [np.float128(0.0)] + \
+        [rng.uniform(0.0, n) for i in range(0, n - 1)] + [np.float128(n)]
     basic_numbers.sort()
-    differences = np.array([basic_numbers[i + 1] - basic_numbers[i] for i in range(0, n)], bigfloat.BigFloat)
+    if use_128_bits:
+        differences = np.array([basic_numbers[i + 1] - basic_numbers[i] for i in range(0, n)], np.float128)
+    else:
+        differences = np.array([basic_numbers[i + 1] - basic_numbers[i] for i in range(0, n)], bigfloat.BigFloat)
     return differences / n
 
-def random_L1_dist_over_n_elements(n):
+def random_L1_dist_over_n_elements(n, use_128_bits=False):
     global __higher_order_reference_rng__
     if __higher_order_reference_rng__ is None:
         __higher_order_reference_rng__ = np.random.default_rng()
     rng = __higher_order_reference_rng__
+
     raw_coords = rng.gamma(1.0, 1.0, n)
-    raw_coords = np.array([bigfloat.BigFloat(x) for x in raw_coords])
+    if not use_128_bits:
+        raw_coords = np.array([bigfloat.BigFloat(x) for x in raw_coords])
     return raw_coords / np.sum(raw_coords)
 
-def random_Hellinger_dist_over_n_elements(n):
+def random_Hellinger_dist_over_n_elements(n, use_128_bits=False):
     global __higher_order_reference_rng__
     if __higher_order_reference_rng__ is None:
         __higher_order_reference_rng__ = np.random.default_rng()
@@ -88,35 +93,49 @@ def random_Hellinger_dist_over_n_elements(n):
     # Randomly L2-generate a point on the L2 SPHERE, then square the components.
 
     raw_coords = rng.gamma(0.5, 1.0, n)
-    raw_coords = np.array([bigfloat.sqrt(x) for x in raw_coords])
-    L2_norm = bigfloat.sqrt(np.sum(np.square(raw_coords)))
+    if use_128_bits:
+        raw_coords = np.sqrt(raw_coords)
+        L2_norm = np.sqrt(np.sum(np.square(raw_coords)))
+    else:
+        raw_coords = np.array([bigfloat.sqrt(x) for x in raw_coords])
+        L2_norm = bigfloat.sqrt(np.sum(np.square(raw_coords)))
     scaled_coords = raw_coords / L2_norm
     distribution = np.square(scaled_coords)
     return distribution
 
 # Rather than returning the full new dist, returns the implied dist over the
 # lower-level sample space.
-def generate_random_dist_over_dists(basic_dists_transposed, metric="TV"):
-    if metric == "TV":
+def generate_random_dist_over_dists(basic_dists_transposed, metric="TV", use_128_bits=False):
+    if metric == "TV" or metric == "L1":
         dist_over_dists = random_L1_dist_over_n_elements(len(basic_dists_transposed[0]))
-    else:
-        assert metric == "H"
+    elif metric == "H":
         dist_over_dists = random_Hellinger_dist_over_n_elements(len(basic_dists_transposed[0]))
+    else:
+        assert metric == "L2"
+        dist_over_dists = random_L2_dist_over_n_elements(len(basic_dists_transposed[0]))
 
     scale_rows_by_meta_dist = basic_dists_transposed * dist_over_dists
     collapsed = np.sum(scale_rows_by_meta_dist, axis=1)
 
-    """
-    dist_over_original_sample_space = []
-    for space_idx in range(0, len(basic_dists[0])):
-        total = bigfloat.BigFloat(0.0)
-        for dist_idx in range(0, len(dist_over_dists)):
-            total += basic_dists[dist_idx][space_idx] * \
-                     dist_over_dists[dist_idx]
-        dist_over_original_sample_space.append(total)
-    dist_over_original_sample_space = np.array(dist_over_original_sample_space)
-    """
     return collapsed
+
+def generate_n_random_dist_over_dists(n, basic_dists, metric="TV", use_128_bits=False):
+    meta_dists = []
+    for i in range(0, n):
+        if metric == "TV" or metric == "L1":
+            dist_over_dists = random_L1_dist_over_n_elements(len(basic_dists), use_128_bits=use_128_bits)
+        elif metric == "H":
+            dist_over_dists = random_Hellinger_dist_over_n_elements(len(basic_dists), use_128_bits=use_128_bits)
+        else:
+            assert metric == "L2"
+            dist_over_dists = random_L2_dist_over_n_elements(len(basic_dists), use_128_bits=use_128_bits)
+        meta_dists.append(dist_over_dists)
+    meta_dists = np.array(meta_dists)
+
+    if use_128_bits and type(basic_dists[0][0]) is not np.float128:
+        basic_dists = np.array([[np.float128(v) for v in row] for row in basic_dists])
+    new_dists = np.matmul(meta_dists, basic_dists)
+    return new_dists
 
 def collapse_dist_to_implied(basic_dists_transposed, dist_over_dists):
     scale_rows_by_meta_dist = basic_dists_transposed * dist_over_dists

@@ -7,7 +7,7 @@ import bigfloat
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-# Can pass "TV" or "H" for metric
+# Can pass "TV", "H", or "L2" for metric
 def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=20, \
         num_dists_by_order=[10000, 5000, 2500, 1250], \
@@ -18,6 +18,10 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         dm = total_variation_distance
     elif metric == "H":
         dm = hellinger_distance
+    elif metric == "L2":
+        dm = L2_distance
+    else:
+        print("Unrecognized metric name '%s'!!!!!" % metric)
 
     binomial = (lambda n : (lambda p_list : binomial_dist(n, p_list[0])))(coin_tosses)
 
@@ -90,16 +94,17 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
 
     new_dists = np.array(first_order_dists)
     for order_idx in range(1, len(num_dists_by_order)):
-        old_dists_transposed = new_dists.transpose()
+        # old_dists_transposed = new_dists.transpose()
         num_dists = num_dists_by_order[order_idx]
         order_name = order_names[order_idx]
-        new_dists = []
+        # new_dists = []
         print("Working on %s Order Prob Functions" % order_name)
-        for i in range(0, num_dists):
-            new_dists.append(generate_random_dist_over_dists(\
-                                old_dists_transposed, \
-                                metric))
-        new_dists = np.array(new_dists)
+        new_dists = generate_n_random_dist_over_dists(num_dists, new_dists, metric, use_128_bits=True)
+        # for i in range(0, num_dists):
+        #     new_dists.append(generate_random_dist_over_dists(\
+        #                         old_dists_transposed, \
+        #                         metric))
+        # new_dists = np.array(new_dists)
         print("  Accumulated %s Order Prob Functions" % order_name)
 
         order_chances = [dist[heads] for dist in new_dists]
@@ -587,14 +592,14 @@ if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=2000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
-    compare_various_uniforms(metric="TV")
-    exit(0)
+    # compare_various_uniforms(metric="TV")
+    # exit(0)
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
-        coin_tosses=50, heads=20, \
-        num_dists_by_order=[10000, 5000, 2500, 1250], \
+        coin_tosses=100, heads=40, \
+        num_dists_by_order=[10000, 10000, 10000, 10000], \
         order_names=["First", "Second", "Third", "Fourth"], \
-        metric="H")
+        metric="L2")
     exit(0)
 
     test_uniformity_idea_existence_on_binomials()
