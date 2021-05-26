@@ -597,7 +597,7 @@ if __name__ == "__main__":
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=100, heads=40, \
-        num_dists_by_order=[10000, 10000, 10000, 10000], \
+        num_dists_by_order=[20000, 20000, 20000, 20000], \
         order_names=["First", "Second", "Third", "Fourth"], \
         metric="L2")
     exit(0)
