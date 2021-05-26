@@ -192,6 +192,58 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
 
             print("  Plotting Ordered Chances Complete")
 
+# Consider: Each dist in this order has a difference of just 2.
+#   Is this the basis for my desired PDF ordering?
+def possible_color_counts_for_n_balls_and_c_colors(n, c):
+    if c == 1:
+        return [[n]]
+
+    counts = []
+    for i in range(0, n):
+        basics = possible_color_counts_for_n_balls_and_c_colors(n - i, c - 1)
+        for b in basics:
+            reverse_b = [b[len(b) - j] for j in range(1, len(b) + 1)]
+            if i % 2 == 0:
+                counts.append(b + [i])
+            else:
+                counts.append(reverse_b + [i])
+    counts.append([0 for _ in range(1, c)] + [n])
+    return counts
+
+
+def uniform_calcs_for_urn_sampling(num_balls_in_urn, num_colors_possible):
+    n = num_balls_in_urn
+    c = num_colors_possible
+    pcc = possible_color_counts_for_n_balls_and_c_colors(n, c)
+    all_dists = [np.array([bigfloat.BigFloat(v) / n for v in d]) for d in pcc]
+    all_dists = np.array(all_dists)
+    all_dists = all_dists.transpose()
+
+    observed_color = 0
+    U_TV_2 = np.array([bigfloat.BigFloat(1.0) / len(all_dists[0]) for \
+                            _ in all_dists[0]])
+
+    U_TV_2_over_colors = np.matmul(all_dists, U_TV_2)
+    print("Distribution over colors before observing color 0:")
+    print(U_TV_2_over_colors)
+
+    U_TV_2_prime = np.array([all_dists[0][i] for i in range(0, len(all_dists[0]))])
+    U_TV_2_prime = U_TV_2_prime / np.sum(U_TV_2_prime)
+
+    U_TV_2_prime_over_colors = np.matmul(all_dists, U_TV_2_prime)
+    print("Distribution over colors after observing color 0:")
+    print(U_TV_2_prime_over_colors)
+
+    # Now for Color 1:
+    U_TV_2_prime = np.array([all_dists[0][i] * U_TV_2_prime[i] for i in range(0, len(all_dists[0]))])
+    U_TV_2_prime = U_TV_2_prime / U_TV_2_prime_over_colors[0]
+
+    U_TV_2_prime_over_colors = np.matmul(all_dists, U_TV_2_prime)
+    print("Distribution over colors after observing color 0 then 1:")
+    print(U_TV_2_prime_over_colors)
+
+    
+
 def test_for_a_natural_distance_metric():
     
     # jensen_shannon_distance(dist_A, dist_B)
@@ -644,6 +696,8 @@ def test_uniformity_idea_existence_on_binomials():
     print("So... jury is still out?")
 
 if __name__ == "__main__":
+    uniform_calcs_for_urn_sampling(90, 3)
+
     bf_context = bigfloat.Context(precision=2000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
@@ -652,7 +706,7 @@ if __name__ == "__main__":
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=100, heads=[10, 30, 50], \
-        num_dists_by_order=[30000, 30000, 30000, 30000, 30000], \
+        num_dists_by_order=[16000, 16000, 16000, 16000, 16000], \
         order_names=["First", "Second", "Third", "Fourth", "Fifth"], \
         metric="TV")
     exit(0)

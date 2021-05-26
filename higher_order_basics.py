@@ -213,7 +213,7 @@ def uniform_dist_over_parametrized_credal_set(\
                             (num_points_per_param - 1) for \
                                 i in range(0, num_params)]
 
-    epsilons = [bigfloat.exp2(-128) * (param_maxs[i] - param_mins[i]) / \
+    epsilons = [bigfloat.exp2(-256) * (param_maxs[i] - param_mins[i]) / \
                     num_points_per_param for i in range(0, num_params)]
 
     distributions = []
