@@ -164,7 +164,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
 
             plt.ylim((plot_min, plot_max))
 
-            title = "Higher Order Convergence for Event: [%d Heads on %d Tosses]" % \
+            title = "Convergence for Event: [%d Heads on %d Tosses]" % \
                 (heads_num, coin_tosses)
             """
             suptitle = "Chances of Event: [%d Heads on %d Tosses]" % \
@@ -652,7 +652,7 @@ if __name__ == "__main__":
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=100, heads=[10, 30, 50], \
-        num_dists_by_order=[16000, 16000, 16000, 16000, 16000], \
+        num_dists_by_order=[30000, 30000, 30000, 30000, 30000], \
         order_names=["First", "Second", "Third", "Fourth", "Fifth"], \
         metric="TV")
     exit(0)
