@@ -9,7 +9,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # Can pass "TV", "H", or "L2" for metric
 def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
-        coin_tosses=50, heads=20, \
+        coin_tosses=50, heads=[20, 25], \
         num_dists_by_order=[10000, 5000, 2500, 1250], \
         order_names=["First", "Second", "Third", "Fourth"], \
         metric="TV"):
@@ -44,10 +44,12 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
 
     space_size = len(uniform_measure)
     plt.plot([bigfloat.BigFloat(1.0) / (space_size - 1) * i \
-                for i in range(0, space_size)], uniform_measure)
-    plt.title("Uniform Over PARAMETER")
-    plt.savefig("uniform_over_parameter.pdf")
-    plt.show()
+                for i in range(0, space_size)], uniform_measure * (len(uniform_measure) - 1))
+    plt.title("%s-Uniform PDF Over Proportion p for n = 100" % metric)
+    plt.xlabel("Proportion p")
+    plt.ylabel("pdf")
+    plt.savefig("%s_uniform_over_parameter.pdf" % metric)
+    # plt.show()
     plt.close()
 
     done = False
@@ -79,15 +81,18 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
 
     print("Plotting Uniform Second Order Dist")
     plt.plot([i for i in range(0, coin_tosses + 1)], uniform_second_order_dist)
-    plt.title("Dist Over Num Heads Implied by Uniform Second Order Dist")
-    plt.savefig("second_order_uniform_over_heads.pdf")
-    plt.show()
+    plt.title("Distribution Implied by 2nd Order %s-Uniform" % metric)
+    plt.xlabel("Number of Heads")
+    plt.ylabel("Probability")
+    plt.savefig("%s_second_order_uniform_over_heads.pdf" % metric)
+    # plt.show()
     plt.close()
     print("  Plotting of Uniform Second Order Dist Complete")
 
-    print("Getting Chances of %d Heads from %d Tosses" % (heads, coin_tosses))
-    first_order_chances = [dist[heads] for dist in first_order_dists]
-    first_order_chances.sort()
+    print("Getting Chances of %s Heads from %d Tosses" % (heads, coin_tosses))
+    first_order_chances = [sorted([dist[heads[i]] for \
+                                dist in first_order_dists]) for \
+                                    i in range(0, len(heads))]
     print("  Getting Chances Complete")
 
     orders_chances = [first_order_chances]
@@ -107,35 +112,38 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         # new_dists = np.array(new_dists)
         print("  Accumulated %s Order Prob Functions" % order_name)
 
-        order_chances = [dist[heads] for dist in new_dists]
-        order_chances.sort()
+        order_chances = [sorted([dist[heads[i]] for dist in new_dists]) for \
+                            i in range(0, len(heads))]
         orders_chances.append(order_chances)
 
-    print("Plotting Ordered Chances of %d heads from %d Tosses" % \
-            (heads, coin_tosses))
-    for i in range(0, len(orders_chances)):
-        order_chances = orders_chances[i]
-        x_axis = [bigfloat.BigFloat(j) / (len(order_chances) - 1) \
-            for j in range(0, len(order_chances))]
-        plt.plot(x_axis, order_chances)
+    for heads_idx in range(0, len(heads)):
+        heads_num = heads[heads_idx]
+        print("Plotting Ordered Chances of %d heads from %d Tosses" % \
+                (heads_num, coin_tosses))
+        for i in range(0, len(orders_chances)):
+            order_chances = orders_chances[i][heads_idx]
+            x_axis = [bigfloat.BigFloat(j) / (len(order_chances) - 1) \
+                for j in range(0, len(order_chances))]
+            plt.plot(x_axis, order_chances, label=("%s Order Distributions" % order_names[i]))
 
-    plt.plot([0, 1], [uniform_second_order_dist[heads], uniform_second_order_dist[heads]], linestyle="dashed")
+        plt.plot([0, 1], [uniform_second_order_dist[heads_num], uniform_second_order_dist[heads_num]], linestyle="dashed", label="Second Order Uniform")
 
-    suptitle = "Representative Chances of %d Heads on %d Tosses" % \
-        (heads, coin_tosses)
-    title = "For"
-    for i in range(0, len(order_names) - 1):
-        title += " %s," % order_names[i]
-    title += ", and %s Order Confidences" % order_names[-1]
-    plt.suptitle(suptitle)
-    plt.title(title)
-    plt.xlabel("Just Indexing Prob Functions...")
-    plt.ylabel("Chance of %d Heads on %d Tosses" % (heads, coin_tosses))
-    plt.savefig("higher_order_convergence.pdf")
-    plt.show()
-    plt.close()
+        suptitle = "Representative Chances of %d Heads on %d Tosses" % \
+            (heads_num, coin_tosses)
+        title = "For"
+        for i in range(0, len(order_names) - 1):
+            title += " %s," % order_names[i]
+        title += " and %s Order Confidences" % order_names[-1]
+        plt.suptitle(suptitle)
+        plt.title(title)
+        plt.xlabel("Just An Indexing Prob Functions")
+        plt.ylabel("Chance of %d Heads on %d Tosses" % (heads_num, coin_tosses))
+        plt.legend()
+        plt.savefig("%s_higher_order_convergence_%d_%d.pdf" % (metric, heads_num, coin_tosses))
+        plt.show()
+        plt.close()
 
-    print("  Plotting Ordered Chances Complete")
+        print("  Plotting Ordered Chances Complete")
 
 def test_for_a_natural_distance_metric():
     
@@ -596,10 +604,10 @@ if __name__ == "__main__":
     # exit(0)
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
-        coin_tosses=100, heads=40, \
+        coin_tosses=100, heads=[30, 50, 10], \
         num_dists_by_order=[20000, 20000, 20000, 20000], \
         order_names=["First", "Second", "Third", "Fourth"], \
-        metric="L2")
+        metric="TV")
     exit(0)
 
     test_uniformity_idea_existence_on_binomials()
