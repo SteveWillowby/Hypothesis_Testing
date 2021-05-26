@@ -14,6 +14,10 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         order_names=["First", "Second", "Third", "Fourth"], \
         metric="TV"):
 
+    axis_fontsize = 14
+    legend_fontsize = 12
+    title_fontsize = 14
+
     if metric == "TV":
         dm = total_variation_distance
     elif metric == "H":
@@ -39,15 +43,20 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
             param_intervals=[[bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)]],\
             params_to_dist=binomial, \
             distance_metric=dm, \
-            num_points_per_param=(num_dists_by_order[0] / 5 + 1))
+            num_points_per_param=(num_dists_by_order[0] / 10 + 1))
+
+
+    U_TV_2 = np.matmul(np.array([uniform_measure]), \
+                       first_order_credal_set_sample_space)
+    U_TV_2 = U_TV_2[0]
     print("  Done Building Uniform Dist over First Order Dists")
 
     space_size = len(uniform_measure)
     plt.plot([bigfloat.BigFloat(1.0) / (space_size - 1) * i \
                 for i in range(0, space_size)], uniform_measure * (len(uniform_measure) - 1))
-    plt.title("%s-Uniform PDF Over Proportion p for n = 100" % metric)
-    plt.xlabel("Proportion p")
-    plt.ylabel("pdf")
+    plt.title("%s-Uniform PDF Over Proportion p for n = 100" % metric, fontsize=title_fontsize)
+    plt.xlabel("Proportion p", fontsize=axis_fontsize)
+    plt.ylabel("Probability Density", fontsize=axis_fontsize)
     plt.savefig("figures/%s_uniform_over_parameter.pdf" % metric)
     # plt.show()
     plt.close()
@@ -79,15 +88,23 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     uniform_second_order_dist /= np.sum(uniform_second_order_dist)
     print("  Generating Uniform Dist Complete")
 
-    print("Plotting Uniform Second Order Dist")
+    print("Plotting Uniform Second Order Dist(s)")
     plt.plot([i for i in range(0, coin_tosses + 1)], uniform_second_order_dist)
-    plt.title("Distribution Implied by 2nd Order %s-Uniform" % metric)
-    plt.xlabel("Number of Heads")
-    plt.ylabel("Probability")
+    plt.title("Distribution Implied by 2nd Order %s-Uniform" % metric, fontsize=title_fontsize)
+    plt.xlabel("Number of Heads", fontsize=axis_fontsize)
+    plt.ylabel("Probability", fontsize=axis_fontsize)
+    plt.savefig("figures/%s_sampled_second_order_uniform_over_heads.pdf" % metric)
+    # plt.show()
+    plt.close()
+
+    plt.plot([i for i in range(0, coin_tosses + 1)], U_TV_2)
+    plt.title("Distribution Implied by 2nd Order %s-Uniform" % metric, fontsize=title_fontsize)
+    plt.xlabel("Number of Heads", fontsize=axis_fontsize)
+    plt.ylabel("Probability", fontsize=axis_fontsize)
     plt.savefig("figures/%s_second_order_uniform_over_heads.pdf" % metric)
     # plt.show()
     plt.close()
-    print("  Plotting of Uniform Second Order Dist Complete")
+    print("  Plotting of Uniform Second Order Dist(s) Complete")
 
     print("Getting Chances of %s Heads from %d Tosses" % (heads, coin_tosses))
     first_order_chances = [sorted([dist[heads[i]] for \
@@ -121,13 +138,28 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
             heads_num = heads[heads_idx]
             print("Plotting Ordered Chances of %d heads from %d Tosses" % \
                     (heads_num, coin_tosses))
-            for i in range(start_order, len(orders_chances)):
+
+            centerpoint = np.float128(uniform_second_order_dist[heads_num])
+            plot_min = min(\
+                np.float128(orders_chances[start_order][heads_idx][0]), \
+                centerpoint)
+            plot_max = max(\
+                np.float128(orders_chances[start_order][heads_idx][-1]), \
+                centerpoint)
+
+            height = plot_max - plot_min
+            plot_min -= 0.05 * height
+            plot_max += 0.05 * height
+
+            for i in range(0, len(orders_chances)):
                 order_chances = orders_chances[i][heads_idx]
                 x_axis = [bigfloat.BigFloat(j) / (len(order_chances) - 1) \
                     for j in range(0, len(order_chances))]
                 plt.plot(x_axis, order_chances, label=("%s Order Distributions" % order_names[i]))
 
             plt.plot([0, 1], [uniform_second_order_dist[heads_num], uniform_second_order_dist[heads_num]], linestyle="dashed", label="Second Order Uniform")
+
+            plt.ylim((plot_min, plot_max))
 
             suptitle = "Representative Chances of %d Heads on %d Tosses" % \
                 (heads_num, coin_tosses)
@@ -138,11 +170,14 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 title += " and %s Order Confidences" % order_names[-1]
             else:
                 title += " %s Order Confidences" % order_names[-1]
-            plt.suptitle(suptitle)
-            plt.title(title)
-            plt.xlabel("Just An Indexing Prob Functions")
-            plt.ylabel("Chance of %d Heads on %d Tosses" % (heads_num, coin_tosses))
-            plt.legend()
+            if start_order == 0:
+                plt.suptitle(suptitle, fontsize=title_fontsize)
+                plt.title(title, fontsize=title_fontsize)
+            if start_order == 2:
+                plt.xlabel("Just an Indexing of Prob Functions", fontsize=axis_fontsize)
+            if heads_idx == 0:
+                plt.ylabel("Chance of %d Heads on %d Tosses" % (heads_num, coin_tosses), fontsize=axis_fontsize)
+            plt.legend(fontsize=legend_fontsize)
             plt.savefig("figures/%s_higher_order_convergence_%d_%d_%d.pdf" % (metric, heads_num, coin_tosses, start_order + 1))
             # plt.show()
             plt.close()
@@ -608,8 +643,8 @@ if __name__ == "__main__":
     # exit(0)
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
-        coin_tosses=100, heads=[30, 50, 10], \
-        num_dists_by_order=[15000, 15000, 15000, 15000, 15000], \
+        coin_tosses=100, heads=[10, 30, 50], \
+        num_dists_by_order=[16000, 16000, 16000, 16000, 16000], \
         order_names=["First", "Second", "Third", "Fourth", "Fifth"], \
         metric="TV")
     exit(0)
