@@ -144,7 +144,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
             plt.ylabel("Chance of %d Heads on %d Tosses" % (heads_num, coin_tosses))
             plt.legend()
             plt.savefig("figures/%s_higher_order_convergence_%d_%d_%d.pdf" % (metric, heads_num, coin_tosses, start_order + 1))
-            plt.show()
+            # plt.show()
             plt.close()
 
             print("  Plotting Ordered Chances Complete")
@@ -609,8 +609,8 @@ if __name__ == "__main__":
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=100, heads=[30, 50, 10], \
-        num_dists_by_order=[2000, 2000, 2000, 2000], \
-        order_names=["First", "Second", "Third", "Fourth"], \
+        num_dists_by_order=[15000, 15000, 15000, 15000, 15000], \
+        order_names=["First", "Second", "Third", "Fourth", "Fifth"], \
         metric="TV")
     exit(0)
 
