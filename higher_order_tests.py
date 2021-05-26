@@ -48,7 +48,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.title("%s-Uniform PDF Over Proportion p for n = 100" % metric)
     plt.xlabel("Proportion p")
     plt.ylabel("pdf")
-    plt.savefig("%s_uniform_over_parameter.pdf" % metric)
+    plt.savefig("figures/%s_uniform_over_parameter.pdf" % metric)
     # plt.show()
     plt.close()
 
@@ -84,7 +84,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.title("Distribution Implied by 2nd Order %s-Uniform" % metric)
     plt.xlabel("Number of Heads")
     plt.ylabel("Probability")
-    plt.savefig("%s_second_order_uniform_over_heads.pdf" % metric)
+    plt.savefig("figures/%s_second_order_uniform_over_heads.pdf" % metric)
     # plt.show()
     plt.close()
     print("  Plotting of Uniform Second Order Dist Complete")
@@ -117,33 +117,37 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         orders_chances.append(order_chances)
 
     for heads_idx in range(0, len(heads)):
-        heads_num = heads[heads_idx]
-        print("Plotting Ordered Chances of %d heads from %d Tosses" % \
-                (heads_num, coin_tosses))
-        for i in range(0, len(orders_chances)):
-            order_chances = orders_chances[i][heads_idx]
-            x_axis = [bigfloat.BigFloat(j) / (len(order_chances) - 1) \
-                for j in range(0, len(order_chances))]
-            plt.plot(x_axis, order_chances, label=("%s Order Distributions" % order_names[i]))
+        for start_order in range(0, len(orders_chances)):
+            heads_num = heads[heads_idx]
+            print("Plotting Ordered Chances of %d heads from %d Tosses" % \
+                    (heads_num, coin_tosses))
+            for i in range(start_order, len(orders_chances)):
+                order_chances = orders_chances[i][heads_idx]
+                x_axis = [bigfloat.BigFloat(j) / (len(order_chances) - 1) \
+                    for j in range(0, len(order_chances))]
+                plt.plot(x_axis, order_chances, label=("%s Order Distributions" % order_names[i]))
 
-        plt.plot([0, 1], [uniform_second_order_dist[heads_num], uniform_second_order_dist[heads_num]], linestyle="dashed", label="Second Order Uniform")
+            plt.plot([0, 1], [uniform_second_order_dist[heads_num], uniform_second_order_dist[heads_num]], linestyle="dashed", label="Second Order Uniform")
 
-        suptitle = "Representative Chances of %d Heads on %d Tosses" % \
-            (heads_num, coin_tosses)
-        title = "For"
-        for i in range(0, len(order_names) - 1):
-            title += " %s," % order_names[i]
-        title += " and %s Order Confidences" % order_names[-1]
-        plt.suptitle(suptitle)
-        plt.title(title)
-        plt.xlabel("Just An Indexing Prob Functions")
-        plt.ylabel("Chance of %d Heads on %d Tosses" % (heads_num, coin_tosses))
-        plt.legend()
-        plt.savefig("%s_higher_order_convergence_%d_%d.pdf" % (metric, heads_num, coin_tosses))
-        plt.show()
-        plt.close()
+            suptitle = "Representative Chances of %d Heads on %d Tosses" % \
+                (heads_num, coin_tosses)
+            title = "For"
+            for i in range(start_order, len(order_names) - 1):
+                title += " %s," % order_names[i]
+            if start_order < len(order_names) - 1:
+                title += " and %s Order Confidences" % order_names[-1]
+            else:
+                title += " %s Order Confidences" % order_names[-1]
+            plt.suptitle(suptitle)
+            plt.title(title)
+            plt.xlabel("Just An Indexing Prob Functions")
+            plt.ylabel("Chance of %d Heads on %d Tosses" % (heads_num, coin_tosses))
+            plt.legend()
+            plt.savefig("figures/%s_higher_order_convergence_%d_%d_%d.pdf" % (metric, heads_num, coin_tosses, start_order + 1))
+            plt.show()
+            plt.close()
 
-        print("  Plotting Ordered Chances Complete")
+            print("  Plotting Ordered Chances Complete")
 
 def test_for_a_natural_distance_metric():
     
@@ -343,7 +347,7 @@ def compare_various_uniforms(metric="TV"):
     elif metric == "L2":
         plt.title("L2 Uniform")
     # plt.show()
-    plt.savefig('%s_Uniform_Method_1.png' % metric)
+    plt.savefig('figures/%s_Uniform_Method_1.png' % metric)
     plt.close()
 
     fig = plt.figure()
@@ -353,7 +357,7 @@ def compare_various_uniforms(metric="TV"):
     ax.scatter([np.float64(x[0]) for x in method_2], [np.float64(x[1]) for x in method_2], [np.float64(x[2]) for x in method_2], marker='o', alpha=0.02)
     plt.title("Simple Parametrization")
     # plt.show()
-    plt.savefig('%s_Uniform_Method_2.png' % metric)
+    plt.savefig('figures/%s_Uniform_Method_2.png' % metric)
     plt.close()
 
     fig = plt.figure()
@@ -363,7 +367,7 @@ def compare_various_uniforms(metric="TV"):
     ax.scatter([np.float64(x[0]) for x in method_3], [np.float64(x[1]) for x in method_3], [np.float64(x[2]) for x in method_3], marker='o', alpha=0.02)
     plt.title("Simple Parametrization")
     # plt.show()
-    plt.savefig('%s_Uniform_Method_3.png' % metric)
+    plt.savefig('figures/%s_Uniform_Method_3.png' % metric)
     plt.close()
 
 def compare_uniform_generation():
@@ -605,7 +609,7 @@ if __name__ == "__main__":
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=100, heads=[30, 50, 10], \
-        num_dists_by_order=[20000, 20000, 20000, 20000], \
+        num_dists_by_order=[2000, 2000, 2000, 2000], \
         order_names=["First", "Second", "Third", "Fourth"], \
         metric="TV")
     exit(0)
