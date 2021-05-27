@@ -58,7 +58,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Proportion p", fontsize=axis_fontsize)
     plt.ylabel("Probability Density", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    plt.savefig("figures/%s_uniform_over_parameter.pdf" % metric)
+    plt.savefig("figures/binomial_convergence/%s_uniform_over_parameter.pdf" % metric)
     # plt.show()
     plt.close()
 
@@ -95,7 +95,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    plt.savefig("figures/%s_sampled_second_order_uniform_over_heads.pdf" % metric)
+    plt.savefig("figures/binomial_convergence/%s_sampled_second_order_uniform_over_heads.pdf" % metric)
     # plt.show()
     plt.close()
 
@@ -104,7 +104,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    plt.savefig("figures/%s_second_order_uniform_over_heads.pdf" % metric)
+    plt.savefig("figures/binomial_convergence/%s_second_order_uniform_over_heads.pdf" % metric)
     # plt.show()
     plt.close()
     print("  Plotting of Uniform Second Order Dist(s) Complete")
@@ -186,7 +186,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 plt.ylabel("Chance of Event", fontsize=axis_fontsize)
             plt.legend(fontsize=legend_fontsize)
             plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-            plt.savefig("figures/%s_higher_order_convergence_%d_%d_%d.pdf" % (metric, heads_num, coin_tosses, start_order + 1))
+            plt.savefig("figures/binomial_convergence/%s_higher_order_convergence_%d_%d_%d.pdf" % (metric, heads_num, coin_tosses, start_order + 1))
             # plt.show()
             plt.close()
 
