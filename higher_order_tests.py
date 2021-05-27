@@ -7,7 +7,7 @@ import bigfloat
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-# Can pass "TV", "H", or "L2" for metric
+# Can pass "TV", "H", "JS", or "L2" for metric
 def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=[20, 25], \
         num_dists_by_order=[10000, 5000, 2500, 1250], \
@@ -24,6 +24,8 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         dm = hellinger_distance
     elif metric == "L2":
         dm = L2_distance
+    elif metric == "JS":
+        dm = jensen_shannon_distance
     else:
         print("Unrecognized metric name '%s'!!!!!" % metric)
 
@@ -191,6 +193,63 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
             plt.close()
 
             print("  Plotting Ordered Chances Complete")
+
+# n - number of tosses
+# c_values_to_plot - a list of #heads to show the likelihood values for
+def binomial_likelihood_function_plot(n, c_values_to_plot, num_binoms=10000, metric="TV"):
+    if metric == "TV":
+        dm = total_variation_distance
+    elif metric == "H":
+        dm = hellinger_distance
+    elif metric == "L2":
+        dm = L2_distance
+    elif metric == "JS":
+        dm = jensen_shannon_distance
+    else:
+        print("Unrecognized metric name '%s'!!!!!" % metric)
+
+    binomial = (lambda t : (lambda p_list : binomial_dist(t, p_list[0])))(n)
+
+    (binomials, uniform_measure) = \
+        uniform_dist_over_parametrized_credal_set(\
+            param_intervals=[[bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)]],\
+            params_to_dist=binomial, \
+            distance_metric=dm, \
+            num_points_per_param=num_binoms)
+
+    U_TV_2 = np.matmul(np.array([uniform_measure]), binomials)
+    U_TV_2 = U_TV_2[0]
+
+    proportions = [bigfloat.BigFloat(j) / (num_binoms - 1) \
+                        for j in range(0, num_binoms)]
+
+    axis_fontsize = 14
+    legend_fontsize = 12
+    title_fontsize = 14
+
+    for c in c_values_to_plot:
+        ref_value = U_TV_2[c]
+        hocs_ratios = [b[c] / ref_value for b in binomials]
+        plt.plot(proportions, hocs_ratios, color='black', label="HOCS Ratio")
+        plt.plot([0, 1], [1, 1], color='red', linestyle='dashed', label="Evidence Threshold")
+
+        best_ratio_idx = 0
+        for i in range(0, len(hocs_ratios)):
+            if hocs_ratios[i] > hocs_ratios[best_ratio_idx]:
+                best_ratio_idx = i
+        plt.plot([proportions[best_ratio_idx], proportions[best_ratio_idx]], \
+                 [0, hocs_ratios[best_ratio_idx]], \
+                 color='black', linestyle='dashed')
+
+        plt.legend(fontsize=legend_fontsize)
+        plt.xlabel("Binomial Proportion p", fontsize=axis_fontsize)
+        plt.ylabel("HOCS Ratio", fontsize=axis_fontsize)
+        plt.xticks([0.1 * i for i in range(0, 11)])
+        plt.suptitle("Evidence For/Against Binomial Proportions", fontsize=title_fontsize)
+        plt.title("From %d Heads Out of %d Coin Tosses" % (c, n), fontsize=title_fontsize)
+        plt.savefig("figures/%s_binomial_%d_%d_hocs_ratios.pdf" % (metric, c, n))
+        plt.show()
+        plt.close()
 
 # Consider: Each dist in this order has a difference of just 2.
 #   Is this the basis for my desired PDF ordering?
@@ -701,6 +760,8 @@ if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=2000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
+    binomial_likelihood_function_plot(n=100, c_values_to_plot=[0, 10, 40, 50], num_binoms=1001, metric="TV")
+    exit(0)
     # compare_various_uniforms(metric="TV")
     # exit(0)
 
