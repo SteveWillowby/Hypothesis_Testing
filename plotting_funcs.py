@@ -1,3 +1,4 @@
+import csv
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
@@ -88,3 +89,21 @@ def plot_3d_surface(left_axis_values, right_axis_values, z_axis_function, \
     plt.title(plot_subtitle)
 
     plt.show()
+
+def save_figure_with_data_csv(the_plt, figure_name, x_axes, y_axes):
+    plt.savefig(figure_name + ".pdf")
+
+    num_rows = max([len(axis) for axis in x_axes])
+
+    with open(figure_name + ".csv", 'w') as list_file:
+        writer = csv.writer(list_file, delimiter=',')
+        for row_idx in range(0, num_rows):
+            row = []
+            for half_col_idx in range(0, len(x_axes)):
+                if len(x_axes[half_col_idx]) > row_idx:
+                    row.append(x_axes[half_col_idx][row_idx])
+                    row.append(y_axes[half_col_idx][row_idx])
+                else:
+                    row += ["", ""]
+
+            writer.writerow(row)

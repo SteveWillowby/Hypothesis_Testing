@@ -1,5 +1,6 @@
 from comb_and_prob_funcs import *
 from higher_order_basics import *
+from plotting_funcs import *
 import random
 import numpy as np
 import optimizing
@@ -54,13 +55,16 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     print("  Done Building Uniform Dist over First Order Dists")
 
     space_size = len(uniform_measure)
-    plt.plot([bigfloat.BigFloat(1.0) / (space_size - 1) * i \
-                for i in range(0, space_size)], uniform_measure * (len(uniform_measure) - 1))
+    x_axis = [bigfloat.BigFloat(1.0) / (space_size - 1) * i \
+                for i in range(0, space_size)]
+    y_axis = uniform_measure * (len(uniform_measure) - 1)
+    plt.plot(x_axis, y_axis)
     plt.title("%s-Uniform PDF Over Proportion p for n = 100" % metric, fontsize=title_fontsize)
     plt.xlabel("Proportion p", fontsize=axis_fontsize)
     plt.ylabel("Probability Density", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    plt.savefig("figures/binomial_convergence/%s_uniform_over_parameter.pdf" % metric)
+    figure_name = "figures/binomial_convergence/%s_uniform_over_parameter" % metric
+    save_figure_with_data_csv(plt, figure_name, [x_axis], [y_axis])
     # plt.show()
     plt.close()
 
@@ -92,21 +96,27 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     print("  Generating Uniform Dist Complete")
 
     print("Plotting Uniform Second Order Dist(s)")
-    plt.plot([i for i in range(0, coin_tosses + 1)], uniform_second_order_dist)
+    x_axis = [i for i in range(0, coin_tosses + 1)]
+    y_axis = uniform_second_order_dist
+    plt.plot(x_axis, y_axis)
     plt.title("Distribution Implied by 2nd Order %s-Uniform" % metric, fontsize=title_fontsize)
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    plt.savefig("figures/binomial_convergence/%s_sampled_second_order_uniform_over_heads.pdf" % metric)
+    figure_name = "figures/binomial_convergence/%s_sampled_second_order_uniform_over_heads.pdf" % metric
+    save_figure_with_data_csv(plt, figure_name, [x_axis], [y_axis])
     # plt.show()
     plt.close()
 
-    plt.plot([i for i in range(0, coin_tosses + 1)], U_TV_2)
+    x_axis = [i for i in range(0, coin_tosses + 1)]
+    y_axis = U_TV_2
+    plt.plot(x_axis, y_axis)
     plt.title("Distribution Implied by 2nd Order %s-Uniform" % metric, fontsize=title_fontsize)
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    plt.savefig("figures/binomial_convergence/%s_second_order_uniform_over_heads.pdf" % metric)
+    figure_name = "figures/binomial_convergence/%s_second_order_uniform_over_heads.pdf" % metric
+    save_figure_with_data_csv(plt, figure_name, [x_axis], [y_axis])
     # plt.show()
     plt.close()
     print("  Plotting of Uniform Second Order Dist(s) Complete")
@@ -140,6 +150,10 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
 
     for heads_idx in range(0, len(heads)):
         for start_order in range(0, len(orders_chances)):
+
+            x_axes = []
+            y_axes = []
+
             heads_num = heads[heads_idx]
             print("Plotting Ordered Chances of %d heads from %d Tosses" % \
                     (heads_num, coin_tosses))
@@ -160,9 +174,15 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 order_chances = orders_chances[i][heads_idx]
                 x_axis = [bigfloat.BigFloat(j) / (len(order_chances) - 1) \
                     for j in range(0, len(order_chances))]
+                x_axes.append(x_axis)
+                y_axes.append(order_chances)
                 plt.plot(x_axis, order_chances, label=("%s Order Distributions" % order_names[i]))
 
-            plt.plot([0, 1], [uniform_second_order_dist[heads_num], uniform_second_order_dist[heads_num]], linestyle="dashed", label="Second Order Uniform")
+            x_axis = [0, 1]
+            y_axis = [uniform_second_order_dist[heads_num], uniform_second_order_dist[heads_num]]
+            x_axes.append(x_axis)
+            y_axes.append(y_axis)
+            plt.plot(x_axis, y_axis, linestyle="dashed", label="Second Order Uniform")
 
             plt.ylim((plot_min, plot_max))
 
@@ -188,7 +208,9 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 plt.ylabel("Chance of Event", fontsize=axis_fontsize)
             plt.legend(fontsize=legend_fontsize)
             plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-            plt.savefig("figures/binomial_convergence/%s_higher_order_convergence_%d_%d_%d.pdf" % (metric, heads_num, coin_tosses, start_order + 1))
+            figure_name = "figures/binomial_convergence/%s_higher_order_convergence_%d_%d_%d.pdf" % \
+                                (metric, heads_num, coin_tosses, start_order + 1)
+            save_figure_with_data_csv(plt, figure_name, x_axes, y_axes)
             # plt.show()
             plt.close()
 
@@ -247,7 +269,9 @@ def binomial_likelihood_function_plot(n, c_values_to_plot, num_binoms=10000, met
         plt.xticks([0.1 * i for i in range(0, 11)])
         plt.suptitle("Evidence For/Against Binomial Proportions", fontsize=title_fontsize)
         plt.title("From %d Heads Out of %d Coin Tosses" % (c, n), fontsize=title_fontsize)
-        plt.savefig("figures/%s_binomial_%d_%d_hocs_ratios.pdf" % (metric, c, n))
+        figure_name = "figures/%s_binomial_%d_%d_hocs_ratios.pdf" % \
+                            (metric, c, n)
+        save_figure_with_data_csv(plt, figure_name, [proportions], [hocs_ratios])
         plt.show()
         plt.close()
 
@@ -760,8 +784,8 @@ if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=2000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
-    binomial_likelihood_function_plot(n=100, c_values_to_plot=[0, 10, 40, 50], num_binoms=1001, metric="TV")
-    exit(0)
+    # binomial_likelihood_function_plot(n=100, c_values_to_plot=[0, 10, 40, 50], num_binoms=1001, metric="TV")
+    # exit(0)
     # compare_various_uniforms(metric="TV")
     # exit(0)
 
@@ -769,7 +793,7 @@ if __name__ == "__main__":
         coin_tosses=100, heads=[10, 30, 50], \
         num_dists_by_order=[16000, 16000, 16000, 16000, 16000], \
         order_names=["First", "Second", "Third", "Fourth", "Fifth"], \
-        metric="H")
+        metric="TV")
     exit(0)
 
     test_uniformity_idea_existence_on_binomials()
