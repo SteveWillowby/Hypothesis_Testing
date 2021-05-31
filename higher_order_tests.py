@@ -103,7 +103,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    figure_name = "figures/binomial_convergence/%s_sampled_second_order_uniform_over_heads.pdf" % metric
+    figure_name = "figures/binomial_convergence/%s_sampled_second_order_uniform_over_heads" % metric
     save_figure_with_data_csv(plt, figure_name, [x_axis], [y_axis])
     # plt.show()
     plt.close()
@@ -115,7 +115,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    figure_name = "figures/binomial_convergence/%s_second_order_uniform_over_heads.pdf" % metric
+    figure_name = "figures/binomial_convergence/%s_second_order_uniform_over_heads" % metric
     save_figure_with_data_csv(plt, figure_name, [x_axis], [y_axis])
     # plt.show()
     plt.close()
@@ -208,7 +208,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 plt.ylabel("Chance of Event", fontsize=axis_fontsize)
             plt.legend(fontsize=legend_fontsize)
             plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-            figure_name = "figures/binomial_convergence/%s_higher_order_convergence_%d_%d_%d.pdf" % \
+            figure_name = "figures/binomial_convergence/%s_higher_order_convergence_%d_%d_%d" % \
                                 (metric, heads_num, coin_tosses, start_order + 1)
             save_figure_with_data_csv(plt, figure_name, x_axes, y_axes)
             # plt.show()
