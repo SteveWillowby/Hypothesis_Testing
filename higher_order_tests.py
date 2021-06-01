@@ -9,9 +9,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # Can pass "TV", "H", "JS", or "L2" for metric
+#
+# All numbers for num_dists_by_order should be a multiple of
+#   plot_subsample_skips + 1.
 def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=[20, 25], \
-        num_dists_by_order=[10000, 5000, 2500, 1250], \
+        num_dists_by_order=[10001, 5001, 2501, 1251], \
         plot_subsample_skips=10, \
         order_names=["First", "Second", "Third", "Fourth"], \
         metric="TV"):
@@ -47,7 +50,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
             param_intervals=[[bigfloat.BigFloat(0.0), bigfloat.BigFloat(1.0)]],\
             params_to_dist=binomial, \
             distance_metric=dm, \
-            num_points_per_param=(num_dists_by_order[0] / 10 + 1))
+            num_points_per_param=(int(num_dists_by_order[0] / 10) + 1))
 
 
     U_TV_2 = np.matmul(np.array([uniform_measure]), \
@@ -64,7 +67,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Proportion p", fontsize=axis_fontsize)
     plt.ylabel("Probability Density", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    figure_name = "figures/binomial_convergence/%s_uniform_over_parameter" % metric
+    figure_name = "figures/binomial_convergence/%s_uniform_over_parameter_n_%d" % (metric, coin_tosses)
     save_figure_with_data_csv(plt, figure_name, [x_axis], [y_axis])
     # plt.show()
     plt.close()
@@ -104,7 +107,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    figure_name = "figures/binomial_convergence/%s_sampled_second_order_uniform_over_heads" % metric
+    figure_name = "figures/binomial_convergence/%s_sampled_second_order_uniform_over_heads_n_%d" % (metric, coin_tosses)
     save_figure_with_data_csv(plt, figure_name, [x_axis], [y_axis])
     # plt.show()
     plt.close()
@@ -116,7 +119,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     plt.xlabel("Number of Heads", fontsize=axis_fontsize)
     plt.ylabel("Probability", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
-    figure_name = "figures/binomial_convergence/%s_second_order_uniform_over_heads" % metric
+    figure_name = "figures/binomial_convergence/%s_second_order_uniform_over_heads_n_%d" % (metric, coin_tosses)
     save_figure_with_data_csv(plt, figure_name, [x_axis], [y_axis])
     # plt.show()
     plt.close()
@@ -127,7 +130,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                                 dist in first_order_dists]) for \
                                     i in range(0, len(heads))]
     first_order_chances = [[d[i * plot_subsample_skips] for \
-                            i in range(0, int(len(d) / plot_subsample_skips)) + 1] for \
+                            i in range(0, int(len(d) / plot_subsample_skips) + 1)] for \
                                 d in first_order_chances]
     print("  Getting Chances Complete")
 
@@ -151,7 +154,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         order_chances = [sorted([dist[heads[i]] for dist in new_dists]) for \
                             i in range(0, len(heads))]
         order_chances = [[d[i * plot_subsample_skips] for \
-                            i in range(0, int(len(d) / plot_subsample_skips)) + 1] for \
+                            i in range(0, int(len(d) / plot_subsample_skips) + 1)] for \
                                 d in order_chances]
 
         orders_chances.append(order_chances)
@@ -799,7 +802,7 @@ if __name__ == "__main__":
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=10, heads=[1, 3, 5], \
-        num_dists_by_order=[16000, 161, 161, 161, 161], \
+        num_dists_by_order=[16001, 16001, 16001, 16001, 16001], \
         plot_subsample_skips=10, \
         order_names=["First", "Second", "Third", "Fourth", "Fifth"], \
         metric="TV")
