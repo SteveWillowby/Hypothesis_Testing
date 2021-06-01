@@ -12,6 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=50, heads=[20, 25], \
         num_dists_by_order=[10000, 5000, 2500, 1250], \
+        plot_subsample_skips=10, \
         order_names=["First", "Second", "Third", "Fourth"], \
         metric="TV"):
 
@@ -125,6 +126,9 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
     first_order_chances = [sorted([dist[heads[i]] for \
                                 dist in first_order_dists]) for \
                                     i in range(0, len(heads))]
+    first_order_chances = [[d[i * plot_subsample_skips] for \
+                            i in range(0, int(len(d) / plot_subsample_skips)) + 1] for \
+                                d in first_order_chances]
     print("  Getting Chances Complete")
 
     orders_chances = [first_order_chances]
@@ -146,6 +150,10 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
 
         order_chances = [sorted([dist[heads[i]] for dist in new_dists]) for \
                             i in range(0, len(heads))]
+        order_chances = [[d[i * plot_subsample_skips] for \
+                            i in range(0, int(len(d) / plot_subsample_skips)) + 1] for \
+                                d in order_chances]
+
         orders_chances.append(order_chances)
 
     for heads_idx in range(0, len(heads)):
@@ -791,7 +799,8 @@ if __name__ == "__main__":
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
         coin_tosses=10, heads=[1, 3, 5], \
-        num_dists_by_order=[16000, 16000, 16000, 16000, 16000], \
+        num_dists_by_order=[16000, 161, 161, 161, 161], \
+        plot_subsample_skips=10, \
         order_names=["First", "Second", "Third", "Fourth", "Fifth"], \
         metric="TV")
     exit(0)
