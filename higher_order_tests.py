@@ -59,7 +59,7 @@ def test_for_higher_order_convergence_with_binomials(null_p=0.5, \
                 for i in range(0, space_size)]
     y_axis = uniform_measure * (len(uniform_measure) - 1)
     plt.plot(x_axis, y_axis)
-    plt.title("%s-Uniform PDF Over Proportion p for n = 100" % metric, fontsize=title_fontsize)
+    plt.title("%s-Uniform PDF Over Proportion p for n = %d" % (metric, coin_tosses), fontsize=title_fontsize)
     plt.xlabel("Proportion p", fontsize=axis_fontsize)
     plt.ylabel("Probability Density", fontsize=axis_fontsize)
     plt.tight_layout()  # Makes sure the axis labels are allowed on the plot.
@@ -790,7 +790,7 @@ if __name__ == "__main__":
     # exit(0)
 
     test_for_higher_order_convergence_with_binomials(null_p=0.5, \
-        coin_tosses=100, heads=[10, 30, 50], \
+        coin_tosses=10, heads=[1, 3, 5], \
         num_dists_by_order=[16000, 16000, 16000, 16000, 16000], \
         order_names=["First", "Second", "Third", "Fourth", "Fifth"], \
         metric="TV")
