@@ -280,7 +280,7 @@ def binomial_likelihood_function_plot(n, c_values_to_plot, num_binoms=10000, met
         plt.xticks([0.1 * i for i in range(0, 11)])
         plt.suptitle("Evidence For/Against Binomial Proportions", fontsize=title_fontsize)
         plt.title("From %d Heads Out of %d Coin Tosses" % (c, n), fontsize=title_fontsize)
-        figure_name = "figures/%s_binomial_%d_%d_hocs_ratios.pdf" % \
+        figure_name = "figures/%s_binomial_%d_%d_hocs_ratios" % \
                             (metric, c, n)
         save_figure_with_data_csv(plt, figure_name, [proportions], [hocs_ratios])
         plt.show()
@@ -795,8 +795,8 @@ if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=2000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
-    # binomial_likelihood_function_plot(n=100, c_values_to_plot=[0, 10, 40, 50], num_binoms=1001, metric="TV")
-    # exit(0)
+    binomial_likelihood_function_plot(n=10, c_values_to_plot=[0, 1, 4, 5], num_binoms=1001, metric="TV")
+    exit(0)
     # compare_various_uniforms(metric="TV")
     # exit(0)
 
