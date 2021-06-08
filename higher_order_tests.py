@@ -795,7 +795,7 @@ if __name__ == "__main__":
     bf_context = bigfloat.Context(precision=2000, emax=100000000, emin=-100000000)
     bigfloat.setcontext(bf_context)
 
-    binomial_likelihood_function_plot(n=10, c_values_to_plot=[0, 1, 4, 5], num_binoms=1001, metric="TV")
+    binomial_likelihood_function_plot(n=100, c_values_to_plot=[0, 10, 40, 50], num_binoms=1001, metric="TV")
     exit(0)
     # compare_various_uniforms(metric="TV")
     # exit(0)
